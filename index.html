@@ -1,1 +1,616 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calepinage Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; padding: 12px; }
 
+  .header { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; padding: 20px; border-radius: 14px; margin-bottom: 16px; }
+  .header h1 { font-size: 1.4em; }
+  .header p { opacity: .85; font-size: .9em; margin-top: 4px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #fff; padding: 5px; border-radius: 12px; overflow-x: auto; }
+  .tab { flex-shrink: 0; padding: 10px 16px; border: none; background: transparent; border-radius: 8px; font-size: .85em; font-weight: 500; cursor: pointer; white-space: nowrap; color: #64748b; transition: all .2s; }
+  .tab:hover { background: #f1f5f9; color: #1e293b; }
+  .tab.active { background: #1a56db; color: #fff; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .card { background: #fff; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  .card h2 { font-size: 1em; color: #1a56db; margin-bottom: 12px; font-weight: 600; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: .78em; color: #64748b; font-weight: 500; }
+  .field input, .field select { padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: .9em; transition: border-color .2s; }
+  .field input:focus, .field select:focus { outline: none; border-color: #1a56db; }
+
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-label { display: flex; align-items: center; gap: 6px; padding: 9px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: .85em; cursor: pointer; transition: all .2s; }
+  .radio-label:has(input:checked) { border-color: #1a56db; background: #eff6ff; color: #1a56db; font-weight: 600; }
+
+  .btn { padding: 11px 20px; border: none; border-radius: 8px; font-size: .9em; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: #1a56db; color: #fff; }
+  .btn-primary:hover { background: #1e40af; }
+  .btn-secondary { background: #e2e8f0; color: #475569; }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-danger { background: #fee2e2; color: #dc2626; border: none; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: .8em; }
+
+  .ouv-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px; border: 1px solid #e2e8f0; }
+  .ouv-item select { padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: .82em; }
+  .ouv-item .lbl { font-size: .75em; color: #94a3b8; }
+  .ouv-item input { width: 64px; padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: .82em; }
+
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .result-card { text-align: center; background: linear-gradient(135deg, #eff6ff, #f0f9ff); padding: 12px 8px; border-radius: 10px; border: 1px solid #dbeafe; }
+  .result-card h3 { font-size: .75em; color: #64748b; margin-bottom: 4px; }
+  .result-card .val { font-size: 1.3em; font-weight: 700; color: #1a56db; }
+
+  .viz-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: .78em; margin-top: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .leg-box { width: 13px; height: 13px; border-radius: 3px; border: 1px solid rgba(0,0,0,.1); }
+
+  .canvas-wrap { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: auto; padding: 8px; }
+  canvas { display: block; max-width: 100%; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .85em; }
+  th { background: #1a56db; color: #fff; padding: 9px 10px; text-align: left; font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+  tr:hover td { background: #f8fafc; }
+  .sep-row td { background: #e2e8f0; font-weight: 600; font-size: .8em; color: #475569; padding: 5px 10px; }
+  .total-row td { font-weight: 700; background: #eff6ff; border-top: 2px solid #1a56db; }
+
+  .empty { color: #94a3b8; font-size: .85em; font-style: italic; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+
+  @media (max-width: 500px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏗️ Calepinage Pro</h1>
+  <p>Bardage &amp; Panneaux — Calcul et plan de pose</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="saisie">📐 Saisie</button>
+  <button class="tab" data-tab="visu">🎨 Visu 2D</button>
+  <button class="tab" data-tab="metre">📊 Métré</button>
+</div>
+
+<!-- ===== SAISIE ===== -->
+<div id="tab-saisie" class="tab-content active">
+
+  <div class="card">
+    <h2>Type de surface</h2>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="surfType" value="facade" checked> Façade</label>
+      <label class="radio-label"><input type="radio" name="surfType" value="pignon"> Pignon</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Dimensions (mm)</h2>
+    <div class="grid2" id="dims">
+      <div class="field"><label>Largeur</label><input type="number" id="larg" value="8000" min="1"></div>
+      <div class="field" id="fHG"><label>Hauteur gauche</label><input type="number" id="hg" value="4000" min="1"></div>
+      <div class="field" id="fHD"><label>Hauteur droite</label><input type="number" id="hd" value="4000" min="1"></div>
+      <div class="field" id="fHC" style="display:none"><label>Hauteur centrale (pointe)</label><input type="number" id="hc" value="6000" min="1"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🪟 Ouvertures</h2>
+    <div id="listeOuv"><p class="empty">Aucune ouverture</p></div>
+    <button class="btn btn-secondary" id="btnAddOuv" style="margin-top:10px">+ Ajouter une ouverture</button>
+  </div>
+
+  <div class="card">
+    <h2>📦 Matériau</h2>
+    <div class="grid2">
+      <div class="field"><label>Type</label>
+        <select id="typeMat">
+          <option value="composite">Composite</option>
+          <option value="fibrociment">Fibrociment</option>
+          <option value="metal">Métal</option>
+        </select>
+      </div>
+      <div class="field"><label>Largeur lame (mm)</label><input type="number" id="lu" value="200" min="1"></div>
+      <div class="field"><label>Longueur lame (mm)</label><input type="number" id="hu" value="3000" min="1"></div>
+      <div class="field"><label>Joint entre lames (mm)</label><input type="number" id="joint" value="8" min="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Accessoires</h2>
+    <div class="grid2">
+      <div class="field"><label>Lame d'air (mm)</label><input type="number" id="lameAir" value="25" min="0"></div>
+      <div class="field"><label>Hauteur anti-rongeur (mm)</label><input type="number" id="antiRongeur" value="300" min="0"></div>
+      <div class="field"><label>Zone vent</label>
+        <select id="zoneVent">
+          <option value="normale">Normale</option>
+          <option value="forte">Forte</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="btnCalc">🔍 Calculer le calepinage</button>
+  </div>
+</div>
+
+<!-- ===== VISU ===== -->
+<div id="tab-visu" class="tab-content">
+  <div class="viz-header">
+    <div>
+      <strong>🎨 Plan de calepinage</strong>
+      <div class="legend">
+        <span class="legend-item"><span class="leg-box" style="background:#86efac"></span> Entière</span>
+        <span class="legend-item"><span class="leg-box" style="background:#fbbf24"></span> Découpée</span>
+        <span class="legend-item"><span class="leg-box" style="background:#fca5a5"></span> Chute</span>
+        <span class="legend-item"><span class="leg-box" style="background:#94a3b8"></span> Ouverture</span>
+        <span class="legend-item"><span class="leg-box" style="background:#d1d5db"></span> Anti-rongeur</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btnPDF">📄 Exporter PDF</button>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="cvs"></canvas>
+  </div>
+</div>
+
+<!-- ===== METRE ===== -->
+<div id="tab-metre" class="tab-content">
+  <div class="result-grid" id="resultCards">
+    <div class="result-card"><h3>Surface brute</h3><div class="val" id="r_brute">—</div></div>
+    <div class="result-card"><h3>Surface utile</h3><div class="val" id="r_utile">—</div></div>
+    <div class="result-card"><h3>Lames</h3><div class="val" id="r_lames">—</div></div>
+    <div class="result-card"><h3>Chutes</h3><div class="val" id="r_chute">—</div></div>
+    <div class="result-card"><h3>Vis</h3><div class="val" id="r_vis">—</div></div>
+    <div class="result-card"><h3>Rails 3m</h3><div class="val" id="r_rails">—</div></div>
+  </div>
+  <div class="card">
+    <div id="tableauMetre"><p class="empty">Calculez d'abord le calepinage</p></div>
+  </div>
+</div>
+
+  <script>
+// ============================================================
+//  STATE
+// ============================================================
+var ouvertures = [];
+var res = null;
+
+// ============================================================
+//  TABS
+// ============================================================
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.addEventListener('click', function() {
+    var id = this.dataset.tab;
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(x){ x.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+    if (id === 'visu' && res) dessiner();
+  });
+});
+
+// ============================================================
+//  TYPE SURFACE
+// ============================================================
+document.querySelectorAll('input[name="surfType"]').forEach(function(r) {
+  r.addEventListener('change', function() {
+    var isPignon = this.value === 'pignon';
+    document.getElementById('fHC').style.display = isPignon ? 'block' : 'none';
+  });
+});
+
+// ============================================================
+//  OUVERTURES
+// ============================================================
+document.getElementById('btnAddOuv').addEventListener('click', function() {
+  ouvertures.push({ id: Date.now(), type: 'fenetre', x: 500, y: 500, larg: 1200, haut: 1500 });
+  renderOuv();
+});
+
+function renderOuv() {
+  var c = document.getElementById('listeOuv');
+  if (ouvertures.length === 0) {
+    c.innerHTML = '<p class="empty">Aucune ouverture</p>';
+    return;
+  }
+  c.innerHTML = '';
+  ouvertures.forEach(function(o, idx) {
+    var d = document.createElement('div');
+    d.className = 'ouv-item';
+    d.innerHTML =
+      '<select data-id="' + o.id + '" data-f="type">' +
+        '<option value="fenetre"' + (o.type==='fenetre'?' selected':'') + '>Fenêtre</option>' +
+        '<option value="porte"' + (o.type==='porte'?' selected':'') + '>Porte</option>' +
+      '</select>' +
+      '<span class="lbl">X</span><input type="number" value="' + o.x + '" data-id="' + o.id + '" data-f="x">' +
+      '<span class="lbl">Y</span><input type="number" value="' + o.y + '" data-id="' + o.id + '" data-f="y">' +
+      '<span class="lbl">L</span><input type="number" value="' + o.larg + '" data-id="' + o.id + '" data-f="larg">' +
+      '<span class="lbl">H</span><input type="number" value="' + o.haut + '" data-id="' + o.id + '" data-f="haut">' +
+      '<button class="btn-danger" data-del="' + o.id + '">🗑️</button>';
+    c.appendChild(d);
+  });
+
+  c.querySelectorAll('[data-f]').forEach(function(el) {
+    el.addEventListener('change', function() {
+      var id = parseInt(this.dataset.id);
+      var f = this.dataset.f;
+      var o = ouvertures.find(function(x){ return x.id === id; });
+      if (!o) return;
+      o[f] = (f === 'type') ? this.value : (parseFloat(this.value) || 0);
+    });
+  });
+
+  c.querySelectorAll('[data-del]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = parseInt(this.dataset.del);
+      ouvertures = ouvertures.filter(function(o){ return o.id !== id; });
+      renderOuv();
+    });
+  });
+}
+
+// ============================================================
+//  CALCUL
+// ============================================================
+document.getElementById('btnCalc').addEventListener('click', function() {
+  var type   = document.querySelector('input[name="surfType"]:checked').value;
+  var larg   = parseFloat(document.getElementById('larg').value) || 0;
+  var hgVal  = parseFloat(document.getElementById('hg').value) || 0;
+  var hdVal  = parseFloat(document.getElementById('hd').value) || 0;
+  var hcVal  = type === 'pignon' ? (parseFloat(document.getElementById('hc').value) || 0) : hgVal;
+  var lu     = parseFloat(document.getElementById('lu').value) || 1;
+  var hu     = parseFloat(document.getElementById('hu').value) || 1;
+  var joint  = parseFloat(document.getElementById('joint').value) || 0;
+  var lAir   = parseFloat(document.getElementById('lameAir').value) || 0;
+  var arH    = parseFloat(document.getElementById('antiRongeur').value) || 0;
+  var zVent  = document.getElementById('zoneVent').value;
+
+  if (larg <= 0 || hgVal <= 0 || hdVal <= 0) { alert('Dimensions invalides'); return; }
+  if (type === 'pignon' && hcVal <= Math.max(hgVal, hdVal)) {
+    alert('La hauteur centrale doit être supérieure aux hauteurs de mur'); return;
+  }
+
+  // ===== SURFACE BRUTE =====
+  var sBrute;
+  if (type === 'facade') {
+    sBrute = (larg * ((hgVal + hdVal) / 2)) / 1e6;
+  } else {
+    // PIGNON : rectangle bas + triangle haut
+    var hMin = Math.min(hgVal, hdVal);
+    var hMax = Math.max(hgVal, hdVal);
+    // Surface du rectangle (hauteur min sur toute la largeur)
+    var surfRect = larg * hMin / 1e6;
+    // Surface du triangle (base = larg, hauteur = hMax - hMin)
+    var surfTri = (larg * (hMax - hMin) / 2) / 1e6;
+    // Surface totale
+    sBrute = surfRect + surfTri;
+  }
+
+  // ===== OUVERTURES =====
+  var sOuv = ouvertures.reduce(function(acc, o){ return acc + (o.larg * o.haut) / 1e6; }, 0);
+
+  // ===== HAUTEUR DE POSE (sans anti-rongeur) =====
+  var hPose = Math.max(0, Math.min(hgVal, hdVal) - arH);
+
+  // ===== SURFACE UTILE =====
+  var sUtile = Math.max(0, (larg * hPose) / 1e6 - sOuv);
+
+  // ===== LAMES =====
+  var nbRangees    = Math.ceil(hPose / (lu + joint));
+  var lamesParRangee = Math.ceil(larg / hu);
+  var nbTotal      = nbRangees * lamesParRangee;
+  var sAchetee     = (nbTotal * lu * hu) / 1e6;
+  var tauxChute    = sAchetee > 0 ? ((sAchetee - sUtile) / sAchetee * 100) : 0;
+
+  // ===== ACCESSOIRES =====
+  var visM2  = zVent === 'forte' ? 8 : 6;
+  var nbVis  = Math.ceil(sUtile * visM2 + ((larg + hgVal + hdVal) / 1000) * 4);
+  var espR   = lAir <= 20 ? 400 : (lAir <= 30 ? 500 : 600);
+  var nbRails = Math.ceil((hPose / espR) * (larg / 3000));
+  var mlAR   = larg / 1000;
+  var nbJD   = Math.floor(hPose / 6000);
+  var mlJD   = (nbJD + 1) * larg / 1000;
+
+  res = {
+    type, larg, hg: hgVal, hd: hdVal, hc: hcVal,
+    lu, hu, joint, arH, hPose, lAir, zVent,
+    sBrute, sOuv, sUtile, sAchetee,
+    nbTotal, nbRangees, lamesParRangee, tauxChute,
+    nbVis, nbRails, mlAR, mlJD, nbJD,
+    ouvertures: JSON.parse(JSON.stringify(ouvertures))
+  };
+
+  // ===== RÉSULTATS AFFICHÉS =====
+  document.getElementById('r_brute').textContent  = sBrute.toFixed(2) + ' m²';
+  document.getElementById('r_utile').textContent  = sUtile.toFixed(2) + ' m²';
+  document.getElementById('r_lames').textContent  = nbTotal + ' u';
+  document.getElementById('r_chute').textContent  = tauxChute.toFixed(1) + '%';
+  document.getElementById('r_vis').textContent    = nbVis + ' u';
+  document.getElementById('r_rails').textContent  = nbRails + ' u';
+
+  // ===== TABLEAU MÉTRÉ =====
+  var html = '<table><thead><tr><th>Poste</th><th>Quantité</th></tr></thead><tbody>';
+  html += '<tr class="sep-row"><td colspan="2">Surfaces</td></tr>';
+  html += '<tr><td>Surface brute</td><td>' + sBrute.toFixed(2) + ' m²</td></tr>';
+  html += '<tr><td>Ouvertures</td><td>− ' + sOuv.toFixed(2) + ' m²</td></tr>';
+  html += '<tr><td>Zone anti-rongeur</td><td>− ' + ((larg * arH) / 1e6).toFixed(2) + ' m²</td></tr>';
+  html += '<tr class="total-row"><td>Surface utile</td><td>' + sUtile.toFixed(2) + ' m²</td></tr>';
+  html += '<tr class="sep-row"><td colspan="2">Lames ' + document.getElementById('typeMat').value + '</td></tr>';
+  html += '<tr><td>Lames ' + hu + ' mm</td><td>' + nbTotal + ' u</td></tr>';
+  html += '<tr><td>Taux de chute</td><td>' + tauxChute.toFixed(1) + '%</td></tr>';
+  html += '<tr class="sep-row"><td colspan="2">Accessoires</td></tr>';
+  html += '<tr><td>Vis (zone ' + zVent + ')</td><td>' + nbVis + ' u</td></tr>';
+  html += '<tr><td>Rails 3m</td><td>' + nbRails + ' u</td></tr>';
+  html += '<tr><td>Anti-rongeur alu</td><td>' + mlAR.toFixed(1) + ' ml</td></tr>';
+  html += '<tr><td>Joints de dilatation</td><td>' + mlJD.toFixed(1) + ' ml</td></tr>';
+  html += '</tbody></table>';
+  document.getElementById('tableauMetre').innerHTML = html;
+
+  // ===== ALLER SUR VISU =====
+  document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(x){ x.classList.remove('active'); });
+  document.querySelector('[data-tab="visu"]').classList.add('active');
+  document.getElementById('tab-visu').classList.add('active');
+  dessiner();
+});
+
+// ============================================================
+//  DESSIN CANVAS
+// ============================================================
+function dessiner() {
+  if (!res) return;
+  var canvas = document.getElementById('cvs');
+  var wrap   = canvas.parentElement;
+  var W      = Math.max(wrap.clientWidth - 16, 300);
+
+  var hauteurTotale = res.type === 'pignon'
+    ? Math.max(res.hg, res.hd, res.hc)
+    : Math.max(res.hg, res.hd);
+
+  var scale = (W - 60) / res.larg;
+  var H     = Math.min(hauteurTotale * scale + 60, 700);
+
+  canvas.width  = W;
+  canvas.height = H;
+
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  // --- Marges ---
+  var mL = 30, mT = 20, mB = 30;
+  var sc = scale;
+
+  // --- Hauteurs en px ---
+  var arPx   = res.arH * sc;
+  var posePx = res.hPose * sc;
+  var hgPx   = res.hg * sc;
+  var hdPx   = res.hd * sc;
+  var hcPx   = res.type === 'pignon' ? res.hc * sc : 0;
+  var largPx = res.larg * sc;
+
+  var yBase  = H - mB;
+  var yPoseTop = yBase - arPx - posePx;
+
+  // --- FOND BLANC ---
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+
+  // --- ANTI-RONGEUR ---
+  if (res.arH > 0) {
+    ctx.fillStyle = '#d1d5db';
+    ctx.fillRect(mL, yBase - arPx, largPx, arPx);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Anti-rongeur ' + res.arH + 'mm', mL + 6, yBase - 4);
+  }
+
+  // --- LAMES RECTANGLE ---
+  var hR = (res.lu + res.joint) * sc;
+  var lP = res.hu * sc;
+
+  for (var i = 0; i < res.nbRangees; i++) {
+    var yLame = yBase - arPx - (i + 1) * hR;
+    var hLame = Math.min(hR - res.joint * sc, posePx - i * hR);
+    if (hLame <= 0) break;
+    if (yLame < yPoseTop) {
+      hLame -= (yPoseTop - yLame);
+      yLame = yPoseTop;
+    }
+    if (hLame <= 0) continue;
+
+    for (var j = 0; j < res.lamesParRangee; j++) {
+      var xLame = mL + j * lP;
+      var reste = res.larg - j * res.hu;
+      var wLame = Math.min(lP, reste * sc);
+      if (wLame <= 0) continue;
+
+      var ratio = reste / res.hu;
+      if (ratio >= 0.95) ctx.fillStyle = '#86efac88';
+      else if (ratio > 0.05) ctx.fillStyle = '#fbbf2488';
+      else ctx.fillStyle = '#fca5a588';
+
+      var isOuv = false;
+      res.ouvertures.forEach(function(o) {
+        var ox = mL + o.x * sc, ow = o.larg * sc;
+        var oy = yBase - (o.y + o.haut) * sc, oh = o.haut * sc;
+        if (xLame < ox + ow && xLame + wLame > ox && yLame < oy + oh && yLame + hLame > oy) {
+          isOuv = true;
+        }
+      });
+      if (isOuv) ctx.fillStyle = '#94a3b855';
+
+      ctx.fillRect(xLame, yLame, wLame, hLame);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(xLame, yLame, wLame, hLame);
+    }
+  }
+
+  // --- OUVERTURES ---
+  res.ouvertures.forEach(function(o) {
+    var ox = mL + o.x * sc;
+    var ow = o.larg * sc;
+    var oy = yBase - (o.y + o.haut) * sc;
+    var oh = o.haut * sc;
+    ctx.fillStyle = '#94a3b8aa';
+    ctx.fillRect(ox, oy, ow, oh);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(ox, oy, ow, oh);
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(o.type === 'porte' ? '🚪' : '🪟', ox + ow / 2, oy + oh / 2 + 4);
+    ctx.textAlign = 'left';
+  });
+
+  // --- TRIANGLE PIGNON + LAMES DANS LE TRIANGLE ---
+  if (res.type === 'pignon') {
+    var hMin = Math.min(res.hg, res.hd);
+    var hMax = Math.max(res.hg, res.hd);
+    var yBaseTri = yBase - hMin * sc;
+
+    // Dessin du contour du triangle
+    ctx.beginPath();
+    ctx.moveTo(mL, yBaseTri - (res.hg - hMin) * sc);
+    ctx.lineTo(mL + largPx / 2, yBaseTri - (res.hc - hMin) * sc);
+    ctx.lineTo(mL + largPx, yBaseTri - (res.hd - hMin) * sc);
+    ctx.lineTo(mL + largPx, yBaseTri);
+    ctx.lineTo(mL, yBaseTri);
+    ctx.closePath();
+    ctx.fillStyle = '#e2e8f066';
+    ctx.fill();
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // LAMES DANS LE TRIANGLE
+    var hTriMax = Math.max(res.hg - hMin, res.hd - hMin, res.hc - hMin);
+    var nbRTri = Math.ceil(hTriMax / (res.lu + res.joint));
+    var hRTri = (res.lu + res.joint) * sc;
+
+    for (var iT = 0; iT < Math.min(nbRTri, 20); iT++) {
+      var yTri = yBaseTri - (iT + 1) * hRTri;
+      var progression = (iT + 0.5) / nbRTri;
+      var largG = res.larg * (1 - progression * (res.hg - hMin) / hTriMax);
+      var largD = res.larg * (1 - progression * (res.hd - hMin) / hTriMax);
+      var largMoy = (largG + largD) / 2;
+      var decalX = (res.larg * sc - largMoy * sc) / 2;
+
+      var nbLamesTri = Math.ceil(largMoy / res.hu);
+      for (var jT = 0; jT < nbLamesTri; jT++) {
+        var xTri = mL + decalX + jT * lP;
+        var resteT = largMoy - jT * res.hu;
+        var wTri = Math.min(lP, resteT * sc);
+        if (wTri <= 0) continue;
+        var ratioT = resteT / res.hu;
+        if (ratioT >= 0.95) ctx.fillStyle = '#86efac88';
+        else if (ratioT > 0.05) ctx.fillStyle = '#fbbf2488';
+        else ctx.fillStyle = '#fca5a588';
+
+        ctx.fillRect(xTri, yTri, wTri, hRTri - res.joint * sc);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(xTri, yTri, wTri, hRTri - res.joint * sc);
+      }
+    }
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Pignon', mL + 6, yBaseTri - (res.hc - hMin) * sc / 2);
+  }
+
+  // --- CONTOUR GÉNÉRAL ---
+  ctx.strokeStyle = '#1e3a8a';
+  ctx.lineWidth = 2;
+  if (res.type === 'facade') {
+    ctx.beginPath();
+    ctx.moveTo(mL, yBase - hgPx);
+    ctx.lineTo(mL + largPx, yBase - hdPx);
+    ctx.lineTo(mL + largPx, yBase);
+    ctx.lineTo(mL, yBase);
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    var hMinC = Math.min(hgPx, hdPx);
+    var yBR = yBase - hMinC;
+    ctx.beginPath();
+    ctx.moveTo(mL, yBase);
+    ctx.lineTo(mL, yBR - (res.hg - Math.min(res.hg, res.hd)) * sc);
+    ctx.lineTo(mL + largPx / 2, yBR - (res.hc - Math.min(res.hg, res.hd)) * sc);
+    ctx.lineTo(mL + largPx, yBR - (res.hd - Math.min(res.hg, res.hd)) * sc);
+    ctx.lineTo(mL + largPx, yBase);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  // --- JOINT DE DILATATION ---
+  if (res.nbJD > 0) {
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    for (var k = 1; k <= res.nbJD; k++) {
+      var yJD = yBase - arPx - k * 6000 * sc;
+      if (yJD < yPoseTop) break;
+      ctx.beginPath();
+      ctx.moveTo(mL, yJD);
+      ctx.lineTo(mL + largPx, yJD);
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '9px sans-serif';
+      ctx.fillText('Joint dilatation', mL + 4, yJD - 2);
+    }
+    ctx.setLineDash([]);
+  }
+
+  // --- COTES ---
+  ctx.fillStyle = '#475569';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(res.larg + ' mm', mL + largPx / 2, H - 4);
+  ctx.save();
+  ctx.translate(12, yBase - hgPx / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(res.hg + ' mm', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+//  PDF
+// ============================================================
+document.getElementById('btnPDF').addEventListener('click', function() {
+  if (!res) { alert('Calculez d\'abord'); return; }
+  var canvas = document.getElementById('cvs');
+  var imgData = canvas.toDataURL('image/png');
+  var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  pdf.setFontSize(16);
+  pdf.text('Calepinage Pro', 14, 14);
+  pdf.setFontSize(10);
+  pdf.text('Surface : ' + res.sBrute.toFixed(2) + ' m²  |  Utile : ' + res.sUtile.toFixed(2) + ' m²  |  Lames : ' + res.nbTotal, 14, 22);
+  var w = 260, h = w * canvas.height / canvas.width;
+  pdf.addImage(imgData, 'PNG', 14, 28, w, h);
+  pdf.save('calepinage.pdf');
+});
+</script>
+</body>
+</html>
