@@ -246,58 +246,51 @@
     if (!canvas || !resultats) return;
     var container = canvas.parentElement;
     canvas.width = Math.max(container.clientWidth, 300);
-    
-    // Hauteur max du pignon (pour le ratio)
-    var hauteurMax = resultats.type === 'pignon' ? 
-        Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
+    var hauteurMax = resultats.type === 'pignon' ? Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
     var ratio = hauteurMax / resultats.l;
     canvas.height = Math.min(canvas.width * ratio, 600);
-    
     var ctx = canvas.getContext('2d');
     var w = canvas.width;
     var h = canvas.height;
-    
-    // Fond blanc
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, w, h);
-    
     var pad = 15;
     var scale = Math.min((w - pad * 2) / resultats.l, (h - pad * 2) / hauteurMax);
     var sx = pad;
     var sy = pad + (h - pad * 2 - hauteurMax * scale) / 2;
-    
-    // --- Anti-rongeur ---
-    var hauteurAntiPx = resultats.hauteurAntiRongeur * scale;
-    var yAnti = sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale;
-    ctx.fillStyle = '#d1d5db';
-    ctx.fillRect(sx, yAnti, resultats.l * scale, hauteurAntiPx);
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('Anti-rongeur', sx + 10, yAnti + 15);
-    
-    // --- RECTANGLE (partie basse) ---
-    var hauteurMin = Math.min(resultats.hg, resultats.hd);
-    var hauteurBardeePx = (hauteurMin - resultats.hauteurAntiRongeur) * scale;
-    var nbR = Math.ceil((hauteurMin - resultats.hauteurAntiRongeur) / (resultats.lu + resultats.joint));
-    var hR = (resultats.lu + resultats.joint) * scale;
-    
-    for (var i = 0; i < Math.min(nbR, 30); i++) {
-        var y = sy + i * hR;
-        if (y > sy + hauteurBardeePx) break;
-        var nbP2 = Math.ceil(resultats.l / resultats.hu);
-        var lP = resultats.hu * scale;
-        for (var j = 0; j < nbP2; j++) {
-            var x = sx + j * lP;
-            var reste = resultats.l - j * resultats.hu;
-            var lr = Math.min(lP, Math.max(0, reste * scale));
-            if (lr <= 0) continue;
-            ctx.fillStyle = (reste > resultats.hu * 0.95) ? '#86efac66' : (reste > 0 ? '#fbbf2466' : '#fca5a566');
-            ctx.fillRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
-        }
+
+    // --- Test : tracer le contour du pignon ---
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    // Point de départ : bas gauche
+    ctx.moveTo(sx, sy + resultats.hg * scale);
+    // Remonter le côté gauche
+    ctx.lineTo(sx, sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale);
+    // Dessiner le triangle (côté gauche, pointe, côté droit)
+    if (resultats.type === 'pignon') {
+        var hauteurMin = Math.min(resultats.hg, resultats.hd);
+        var yBase = sy + hauteurMin * scale;
+        ctx.lineTo(sx, yBase - (resultats.hg - hauteurMin) * scale);
+        ctx.lineTo(sx + resultats.l * scale / 2, sy + (resultats.hg - resultats.hc) * scale);
+        ctx.lineTo(sx + resultats.l * scale, yBase - (resultats.hd - hauteurMin) * scale);
+        ctx.lineTo(sx + resultats.l * scale, sy + hauteurMin * scale);
     }
+    // Redescendre le côté droit
+    ctx.lineTo(sx + resultats.l * scale, sy + resultats.hd * scale);
+    // Fermer le contour
+    ctx.closePath();
+    ctx.stroke();
+
+    // --- Afficher les hauteurs ---
+    ctx.fillStyle = '#000';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('HG: ' + resultats.hg + ' mm', sx + 5, sy + resultats.hg * scale - 5);
+    ctx.fillText('HD: ' + resultats.hd + ' mm', sx + resultats.l * scale - 60, sy + resultats.hd * scale - 5);
+    if (resultats.type === 'pignon') {
+        ctx.fillText('HC: ' + resultats.hc + ' mm', sx + resultats.l * scale / 2 - 30, sy + (resultats.hg - resultats.hc) * scale - 5);
+    }
+}
     
     // --- TRIANGLE (partie haute) ---
     if (resultats.type === 'pignon') {
