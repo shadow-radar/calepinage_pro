@@ -141,210 +141,264 @@
         <div class="card"><div id="tableauMetre"></div></div>
     </div>
 
-    <script>
-    console.log('START');
+<script>
+console.log('START');
 
-    var resultats = null;
-    var ouvertures = [];
+var resultats = null;
+var ouvertures = [];
 
-    // TABS
-    document.querySelectorAll('.tabs .tab').forEach(function(tab){
-        tab.onclick = function(){
-            var tn = this.getAttribute('data-tab');
-            document.querySelectorAll('.tabs .tab').forEach(function(t){t.classList.remove('active')});
-            document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
-            this.classList.add('active');
-            document.getElementById('tab-'+tn).classList.add('active');
-        };
-    });
-
-    // PIGNON TOGGLE
-    document.querySelectorAll('input[name="surfaceType"]').forEach(function(r){
-        r.onchange = function(){
-            var p = this.value === 'pignon';
-            document.getElementById('largeur2Group').style.display = p ? 'block' : 'none';
-            document.getElementById('hauteurDGroup').style.display = p ? 'block' : 'none';
-        };
-    });
-
-    // OUVERTURES
-    document.getElementById('btnAjoutOuv').onclick = function(){
-        var id = Date.now();
-        ouvertures.push({id:id,type:'fenetre',x:0,y:0,largeur:1200,hauteur:1500});
-        afficherOuvertures();
-    };
-
-    function afficherOuvertures(){
-        var c = document.getElementById('listeOuvertures');
-        if(ouvertures.length===0){c.innerHTML='<p style="color:#94a3b8;font-size:.85em">Aucune</p>';return;}
-        c.innerHTML = '';
-        ouvertures.forEach(function(o){
-            var div = document.createElement('div');
-            div.className = 'ouverture-item';
-            div.innerHTML = 
-                '<select><option value="fenetre"'+(o.type==='fenetre'?' selected':'')+'>Fenêtre</option><option value="porte"'+(o.type==='porte'?' selected':'')+'>Porte</option></select>'+
-                ' X:<input type="number" value="'+o.x+'" data-id="'+o.id+'" data-champ="x">'+
-                ' Y:<input type="number" value="'+o.y+'" data-id="'+o.id+'" data-champ="y">'+
-                ' L:<input type="number" value="'+o.largeur+'" data-id="'+o.id+'" data-champ="largeur">'+
-                ' H:<input type="number" value="'+o.hauteur+'" data-id="'+o.id+'" data-champ="hauteur">'+
-                '<button data-del="'+o.id+'" style="background:#fee2e2;border:none;padding:4px 8px;border-radius:4px">🗑️</button>';
-            c.appendChild(div);
-        });
-        // Events inputs
-        c.querySelectorAll('input').forEach(function(inp){
-            inp.onchange = function(){
-                var id = parseInt(this.getAttribute('data-id'));
-                var champ = this.getAttribute('data-champ');
-                var o = ouvertures.find(function(x){return x.id===id});
-                if(o) o[champ] = parseFloat(this.value)||0;
-            };
-        });
-        // Events selects
-        c.querySelectorAll('select').forEach(function(sel){
-            sel.onchange = function(){
-                var id = parseInt(this.parentElement.querySelector('input').getAttribute('data-id'));
-                var o = ouvertures.find(function(x){return x.id===id});
-                if(o) o.type = this.value;
-            };
-        });
-        // Events delete
-        c.querySelectorAll('button[data-del]').forEach(function(btn){
-            btn.onclick = function(){
-                var id = parseInt(this.getAttribute('data-del'));
-                ouvertures = ouvertures.filter(function(o){return o.id!==id});
-                afficherOuvertures();
-            };
-        });
-    }
-
-    // CALCUL
-    document.getElementById('btnCalculer').onclick = function(){
-        var type = document.querySelector('input[name="surfaceType"]:checked').value;
-        var l = parseFloat(document.getElementById('largeur').value)||0;
-        var hg = parseFloat(document.getElementById('hauteurG').value)||0;
-        var l2 = type==='pignon' ? (parseFloat(document.getElementById('largeur2').value)||l) : l;
-        var hd = type==='pignon' ? (parseFloat(document.getElementById('hauteurD').value)||hg) : hg;
-        var lu = parseFloat(document.getElementById('largeurUtile').value)||1;
-        var hu = parseFloat(document.getElementById('hauteurUtile').value)||1;
-        var joint = parseFloat(document.getElementById('joint').value)||0;
-        var pu = parseFloat(document.getElementById('prixUnitaire').value)||0;
-        var pmo = parseFloat(document.getElementById('prixMO').value)||0;
-        var tmo = parseFloat(document.getElementById('tempsMO').value)||0;
-
-        if(l<=0||hg<=0){alert('Dimensions invalides');return;}
-
-        // Surface brute
-        var sBrute = type==='facade' ? (l*hg)/1000000 : ((l+l2)*hg/2)/1000000;
-        // Surface ouvertures
-        var sOuv = 0;
-        ouvertures.forEach(function(o){sOuv += (o.largeur*o.hauteur)/1000000;});
-        var sUtile = Math.max(0, sBrute - sOuv);
-        // Nombre lames
-        var nbRangees = Math.ceil(hg/(lu+joint));
-        var lamesParRangee = Math.ceil(l/hu);
-        var nbTotal = nbRangees * lamesParRangee;
-        // Chutes
-        var sMatiere = nbTotal * (lu*hu)/1000000;
-        var tauxChute = sMatiere>0 ? ((sMatiere-sUtile)/sMatiere*100) : 0;
-        // Prix
-        var prixMat = nbTotal * pu;
-        var prixMOTotal = sUtile * pmo;
-        var totalHT = prixMat + prixMOTotal;
-        var tempsTotal = sUtile * tmo;
-
-        resultats = {
-            sBrute:sBrute, sOuv:sOuv, sUtile:sUtile, sMatiere:sMatiere,
-            nbTotal:nbTotal, tauxChute:tauxChute,
-            l:l, hg:hg, lu:lu, hu:hu, joint:joint,
-            prixMat:prixMat, prixMO:prixMOTotal, totalHT:totalHT,
-            tempsTotal:tempsTotal
-        };
-
-        // Afficher résultats
-        document.getElementById('r_surface').textContent = sBrute.toFixed(2)+' m²';
-        document.getElementById('r_utile').textContent = sUtile.toFixed(2)+' m²';
-        document.getElementById('r_nombre').textContent = nbTotal;
-        document.getElementById('r_chute').textContent = tauxChute.toFixed(1)+'%';
-        document.getElementById('r_temps').textContent = tempsTotal.toFixed(1)+' h';
-        document.getElementById('r_prix').textContent = totalHT.toFixed(2)+' €';
-
-        // Tableau métré
-        document.getElementById('tableauMetre').innerHTML = 
-            '<table><thead><tr><th>Poste</th><th>Qté</th><th>Total HT</th></tr></thead><tbody>'+
-            '<tr><td>Surface brute</td><td>'+sBrute.toFixed(2)+' m²</td><td>-</td></tr>'+
-            '<tr><td>Ouvertures</td><td>'+sOuv.toFixed(2)+' m²</td><td>-</td></tr>'+
-            '<tr><td>Surface utile</td><td>'+sUtile.toFixed(2)+' m²</td><td>-</td></tr>'+
-            '<tr><td>Éléments</td><td>'+nbTotal+' unités</td><td>'+prixMat.toFixed(2)+' €</td></tr>'+
-            '<tr><td>Chutes</td><td>'+tauxChute.toFixed(1)+'%</td><td>-</td></tr>'+
-            '<tr><td>Main d\'œuvre</td><td>'+tempsTotal.toFixed(1)+' h</td><td>'+prixMOTotal.toFixed(2)+' €</td></tr>'+
-            '<tr class="total-row"><td><strong>TOTAL HT</strong></td><td></td><td><strong>'+totalHT.toFixed(2)+' €</strong></td></tr>'+
-            '</tbody></table>';
-
-        // Visu 2D
-        dessiner();
-        // Aller à visu
+// TABS
+document.querySelectorAll('.tabs .tab').forEach(function(tab){
+    tab.onclick = function(){
+        var tn = this.getAttribute('data-tab');
         document.querySelectorAll('.tabs .tab').forEach(function(t){t.classList.remove('active')});
         document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
-        document.querySelector('[data-tab="visu"]').classList.add('active');
-        document.getElementById('tab-visu').classList.add('active');
+        this.classList.add('active');
+        document.getElementById('tab-'+tn).classList.add('active');
+    };
+});
+
+// PIGNON TOGGLE
+document.querySelectorAll('input[name="surfaceType"]').forEach(function(r){
+    r.onchange = function(){
+        var p = this.value === 'pignon';
+        document.getElementById('largeur2Group').style.display = p ? 'block' : 'none';
+        document.getElementById('hauteurDGroup').style.display = p ? 'block' : 'none';
+    };
+});
+
+// OUVERTURES
+document.getElementById('btnAjoutOuv').onclick = function(){
+    var id = Date.now();
+    ouvertures.push({id:id,type:'fenetre',x:0,y:0,largeur:1200,hauteur:1500});
+    afficherOuvertures();
+};
+
+function afficherOuvertures(){
+    var c = document.getElementById('listeOuvertures');
+    if(ouvertures.length===0){c.innerHTML='<p style="color:#94a3b8;font-size:.85em">Aucune</p>';return;}
+    c.innerHTML = '';
+    ouvertures.forEach(function(o){
+        var div = document.createElement('div');
+        div.className = 'ouverture-item';
+        div.innerHTML = 
+            '<select><option value="fenetre"'+(o.type==='fenetre'?' selected':'')+'>Fenêtre</option><option value="porte"'+(o.type==='porte'?' selected':'')+'>Porte</option></select>'+
+            ' X:<input type="number" value="'+o.x+'" data-id="'+o.id+'" data-champ="x">'+
+            ' Y:<input type="number" value="'+o.y+'" data-id="'+o.id+'" data-champ="y">'+
+            ' L:<input type="number" value="'+o.largeur+'" data-id="'+o.id+'" data-champ="largeur">'+
+            ' H:<input type="number" value="'+o.hauteur+'" data-id="'+o.id+'" data-champ="hauteur">'+
+            '<button data-del="'+o.id+'" style="background:#fee2e2;border:none;padding:4px 8px;border-radius:4px">🗑️</button>';
+        c.appendChild(div);
+    });
+    // Events inputs
+    c.querySelectorAll('input').forEach(function(inp){
+        inp.onchange = function(){
+            var id = parseInt(this.getAttribute('data-id'));
+            var champ = this.getAttribute('data-champ');
+            var o = ouvertures.find(function(x){return x.id===id});
+            if(o) o[champ] = parseFloat(this.value)||0;
+        };
+    });
+    // Events selects
+    c.querySelectorAll('select').forEach(function(sel){
+        sel.onchange = function(){
+            var id = parseInt(this.parentElement.querySelector('input').getAttribute('data-id'));
+            var o = ouvertures.find(function(x){return x.id===id});
+            if(o) o.type = this.value;
+        };
+    });
+    // Events delete
+    c.querySelectorAll('button[data-del]').forEach(function(btn){
+        btn.onclick = function(){
+            var id = parseInt(this.getAttribute('data-del'));
+            ouvertures = ouvertures.filter(function(o){return o.id!==id});
+            afficherOuvertures();
+        };
+    });
+}
+
+// CALCUL
+document.getElementById('btnCalculer').onclick = function(){
+    var type = document.querySelector('input[name="surfaceType"]:checked').value;
+    var l = parseFloat(document.getElementById('largeur').value)||0;
+    var hg = parseFloat(document.getElementById('hauteurG').value)||0;
+    var l2 = type==='pignon' ? (parseFloat(document.getElementById('largeur2').value)||l) : l;
+    var hd = type==='pignon' ? (parseFloat(document.getElementById('hauteurD').value)||hg) : hg;
+    var lu = parseFloat(document.getElementById('largeurUtile').value)||1;
+    var hu = parseFloat(document.getElementById('hauteurUtile').value)||1;
+    var joint = parseFloat(document.getElementById('joint').value)||0;
+    var pu = parseFloat(document.getElementById('prixUnitaire').value)||0;
+    var pmo = parseFloat(document.getElementById('prixMO').value)||0;
+    var tmo = parseFloat(document.getElementById('tempsMO').value)||0;
+
+    if(l<=0||hg<=0){alert('Dimensions invalides');return;}
+
+    // Surface brute
+    var sBrute = type==='facade' ? (l*hg)/1000000 : ((l+l2)*hg/2)/1000000;
+    // Surface ouvertures
+    var sOuv = 0;
+    ouvertures.forEach(function(o){sOuv += (o.largeur*o.hauteur)/1000000;});
+    var sUtile = Math.max(0, sBrute - sOuv);
+    // Nombre lames
+    var nbRangees = Math.ceil(hg/(lu+joint));
+    var lamesParRangee = Math.ceil(l/hu);
+    var nbTotal = nbRangees * lamesParRangee;
+    // Chutes
+    var sMatiere = nbTotal * (lu*hu)/1000000;
+    var tauxChute = sMatiere>0 ? ((sMatiere-sUtile)/sMatiere*100) : 0;
+
+    // ==================== ACCESSOIRES ====================
+    // Vis : ~8 vis/m² + 4 vis par mètre linéaire de périmètre
+    var perimetre = (l + hg) * 2 / 1000; // en mètres
+    var nbVis = Math.ceil(sUtile * 8 + perimetre * 4);
+    
+    // Rails : 1 rail tous les 600mm (horizontal) ou 400mm (vertical)
+    var ecartementRail = 600; // horizontal par défaut
+    var nbRails = Math.ceil((hg / ecartementRail) * (l / 3000));
+    
+    // Profils de départ : largeur basse en ml
+    var mlDepart = l / 1000;
+    
+    // Profils de finition : périmètre en ml
+    var mlFinition = perimetre;
+    
+    // Bande d'étanchéité : surface x 1.5
+    var mlEtancheite = sUtile * 1.5;
+    
+    // Prix accessoires
+    var prixVis = nbVis * 0.15;
+    var prixRails = nbRails * 18;
+    var prixDepart = mlDepart * 12;
+    var prixFinition = mlFinition * 15;
+    var prixEtancheite = mlEtancheite * 3.50;
+    var prixAccessoires = prixVis + prixRails + prixDepart + prixFinition + prixEtancheite;
+    // =====================================================
+
+    // Prix
+    var prixMat = nbTotal * pu;
+    var prixMOTotal = sUtile * pmo;
+    var totalHT = prixMat + prixAccessoires + prixMOTotal;
+    var totalTTC = totalHT * 1.2;
+    var tempsTotal = sUtile * tmo;
+
+    resultats = {
+        sBrute:sBrute, sOuv:sOuv, sUtile:sUtile, sMatiere:sMatiere,
+        nbTotal:nbTotal, tauxChute:tauxChute,
+        l:l, hg:hg, lu:lu, hu:hu, joint:joint,
+        prixMat:prixMat, prixMO:prixMOTotal, totalHT:totalHT, totalTTC:totalTTC,
+        tempsTotal:tempsTotal,
+        // Accessoires
+        nbVis:nbVis, nbRails:nbRails, mlDepart:mlDepart, mlFinition:mlFinition, mlEtancheite:mlEtancheite,
+        prixVis:prixVis, prixRails:prixRails, prixDepart:prixDepart, prixFinition:prixFinition, prixEtancheite:prixEtancheite, prixAccessoires:prixAccessoires
     };
 
-    function dessiner(){
-        var canvas = document.getElementById('canvasCalepinage');
-        if(!canvas||!resultats)return;
-        var c = canvas.parentElement;
-        canvas.width = Math.max(c.clientWidth,300);
-        var ratio = resultats.hg/resultats.l;
-        canvas.height = Math.min(canvas.width*ratio,500);
-        var ctx = canvas.getContext('2d');
-        var w = canvas.width, h = canvas.height;
-        ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
-        var pad=15;
-        var scale=Math.min((w-pad*2)/resultats.l,(h-pad*2)/resultats.hg);
-        var sx=pad,sy=pad,sw=resultats.l*scale,sh=resultats.hg*scale;
-        ctx.fillStyle='#e2e8f0';ctx.fillRect(sx,sy,sw,sh);
-        ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.strokeRect(sx,sy,sw,sh);
-        // Ouvertures
-        ouvertures.forEach(function(o){
-            ctx.fillStyle='#cbd5e1';ctx.fillRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
-            ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;ctx.strokeRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
-        });
-        // Lames
-        var nbR=Math.ceil(resultats.hg/(resultats.lu+resultats.joint));
-        var hR=(resultats.lu+resultats.joint)*scale;
-        for(var i=0;i<Math.min(nbR,20);i++){
-            var y=sy+i*hR;
-            var nbP=Math.ceil(resultats.l/resultats.hu);
-            var lP=resultats.hu*scale;
-            for(var j=0;j<nbP;j++){
-                var x=sx+j*lP;
-                var reste=resultats.l-j*resultats.hu;
-                var lr=Math.min(lP,reste*scale);
-                ctx.fillStyle=reste>resultats.hu*0.9?'#86efac66':reste>0?'#fbbf2466':'#fca5a566';
-                ctx.fillRect(x,y,lr,Math.min(hR,sh-(y-sy)));
-                ctx.strokeStyle='#64748b';ctx.lineWidth=0.5;ctx.strokeRect(x,y,lr,Math.min(hR,sh-(y-sy)));
-            }
+    // Afficher résultats
+    document.getElementById('r_surface').textContent = sBrute.toFixed(2)+' m²';
+    document.getElementById('r_utile').textContent = sUtile.toFixed(2)+' m²';
+    document.getElementById('r_nombre').textContent = nbTotal;
+    document.getElementById('r_chute').textContent = tauxChute.toFixed(1)+'%';
+    document.getElementById('r_temps').textContent = tempsTotal.toFixed(1)+' h';
+    document.getElementById('r_prix').textContent = totalHT.toFixed(2)+' €';
+
+    // Tableau métré avec accessoires
+    document.getElementById('tableauMetre').innerHTML = 
+        '<table><thead><tr><th>Poste</th><th>Qté</th><th>Total HT</th></tr></thead><tbody>'+
+        '<tr><td>Surface brute</td><td>'+sBrute.toFixed(2)+' m²</td><td>-</td></tr>'+
+        '<tr><td>Ouvertures</td><td>'+sOuv.toFixed(2)+' m²</td><td>-</td></tr>'+
+        '<tr><td><strong>Surface utile</strong></td><td><strong>'+sUtile.toFixed(2)+' m²</strong></td><td>-</td></tr>'+
+        '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">📦 Matériau principal</td></tr>'+
+        '<tr><td>Éléments</td><td>'+nbTotal+' unités</td><td>'+prixMat.toFixed(2)+' €</td></tr>'+
+        '<tr><td>Chutes</td><td>'+tauxChute.toFixed(1)+'%</td><td>-</td></tr>'+
+        '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">🔩 Accessoires</td></tr>'+
+        '<tr><td>Vis auto-perceuses</td><td>'+nbVis+' unités</td><td>'+prixVis.toFixed(2)+' €</td></tr>'+
+        '<tr><td>Rails intermédiaires 3m</td><td>'+nbRails+' barres</td><td>'+prixRails.toFixed(2)+' €</td></tr>'+
+        '<tr><td>Profil de départ</td><td>'+mlDepart.toFixed(1)+' ml</td><td>'+prixDepart.toFixed(2)+' €</td></tr>'+
+        '<tr><td>Profil de finition</td><td>'+mlFinition.toFixed(1)+' ml</td><td>'+prixFinition.toFixed(2)+' €</td></tr>'+
+        '<tr><td>Bande d\'étanchéité</td><td>'+mlEtancheite.toFixed(1)+' ml</td><td>'+prixEtancheite.toFixed(2)+' €</td></tr>'+
+        '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">👷 Main d\'œuvre</td></tr>'+
+        '<tr><td>Temps de pose</td><td>'+tempsTotal.toFixed(1)+' h</td><td>'+prixMOTotal.toFixed(2)+' €</td></tr>'+
+        '<tr class="total-row"><td><strong>TOTAL HT</strong></td><td></td><td><strong>'+totalHT.toFixed(2)+' €</strong></td></tr>'+
+        '<tr class="total-row"><td><strong>TOTAL TTC</strong></td><td></td><td><strong>'+totalTTC.toFixed(2)+' €</strong></td></tr>'+
+        '</tbody></table>';
+
+    // Visu 2D
+    dessiner();
+    // Aller à visu
+    document.querySelectorAll('.tabs .tab').forEach(function(t){t.classList.remove('active')});
+    document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
+    document.querySelector('[data-tab="visu"]').classList.add('active');
+    document.getElementById('tab-visu').classList.add('active');
+};
+
+function dessiner(){
+    var canvas = document.getElementById('canvasCalepinage');
+    if(!canvas||!resultats)return;
+    var c = canvas.parentElement;
+    canvas.width = Math.max(c.clientWidth,300);
+    var ratio = resultats.hg/resultats.l;
+    canvas.height = Math.min(canvas.width*ratio,500);
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+    var pad=15;
+    var scale=Math.min((w-pad*2)/resultats.l,(h-pad*2)/resultats.hg);
+    var sx=pad,sy=pad,sw=resultats.l*scale,sh=resultats.hg*scale;
+    ctx.fillStyle='#e2e8f0';ctx.fillRect(sx,sy,sw,sh);
+    ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.strokeRect(sx,sy,sw,sh);
+    // Ouvertures
+    ouvertures.forEach(function(o){
+        ctx.fillStyle='#cbd5e1';ctx.fillRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
+        ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;ctx.strokeRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
+    });
+    // Lames
+    var nbR=Math.ceil(resultats.hg/(resultats.lu+resultats.joint));
+    var hR=(resultats.lu+resultats.joint)*scale;
+    for(var i=0;i<Math.min(nbR,20);i++){
+        var y=sy+i*hR;
+        var nbP=Math.ceil(resultats.l/resultats.hu);
+        var lP=resultats.hu*scale;
+        for(var j=0;j<nbP;j++){
+            var x=sx+j*lP;
+            var reste=resultats.l-j*resultats.hu;
+            var lr=Math.min(lP,reste*scale);
+            ctx.fillStyle=reste>resultats.hu*0.9?'#86efac66':reste>0?'#fbbf2466':'#fca5a566';
+            ctx.fillRect(x,y,lr,Math.min(hR,sh-(y-sy)));
+            ctx.strokeStyle='#64748b';ctx.lineWidth=0.5;ctx.strokeRect(x,y,lr,Math.min(hR,sh-(y-sy)));
         }
-        ctx.fillStyle='#334155';ctx.font='10px sans-serif';
-        ctx.fillText(resultats.l+' mm',sx+sw/2-20,sy+sh+12);
     }
+    ctx.fillStyle='#334155';ctx.font='10px sans-serif';
+    ctx.fillText(resultats.l+' mm',sx+sw/2-20,sy+sh+12);
+}
 
-    // PDF
-    document.getElementById('btnPDF').onclick = function(){
-        if(!resultats){alert('Faites un calcul');return;}
-        var doc = new window.jspdf.jsPDF('p','mm','a4');
-        doc.setFontSize(16);doc.setTextColor(26,86,219);doc.text('CALEPINAGE',15,20);
-        doc.setFontSize(10);doc.setTextColor(100);
-        doc.text('Surface brute: '+resultats.sBrute.toFixed(2)+' m²',15,30);
-        doc.text('Surface utile: '+resultats.sUtile.toFixed(2)+' m²',15,37);
-        doc.text('Éléments: '+resultats.nbTotal,15,44);
-        doc.text('Chutes: '+resultats.tauxChute.toFixed(1)+'%',15,51);
-        doc.text('Temps: '+resultats.tempsTotal.toFixed(1)+' h',15,58);
-        doc.text('Total HT: '+resultats.totalHT.toFixed(2)+' €',15,65);
-        doc.save('calepinage.pdf');
-    };
+// PDF
+document.getElementById('btnPDF').onclick = function(){
+    if(!resultats){alert('Faites un calcul');return;}
+    var doc = new window.jspdf.jsPDF('p','mm','a4');
+    doc.setFontSize(16);doc.setTextColor(26,86,219);doc.text('CALEPINAGE',15,20);
+    doc.setFontSize(10);doc.setTextColor(100);
+    var y=30;
+    var lignes=[
+        'Surface brute: '+resultats.sBrute.toFixed(2)+' m²',
+        'Surface utile: '+resultats.sUtile.toFixed(2)+' m²',
+        'Éléments: '+resultats.nbTotal+' unités',
+        'Chutes: '+resultats.tauxChute.toFixed(1)+'%',
+        '--- Accessoires ---',
+        'Vis: '+resultats.nbVis+' unités - '+resultats.prixVis.toFixed(2)+' €',
+        'Rails: '+resultats.nbRails+' barres - '+resultats.prixRails.toFixed(2)+' €',
+        'Profil départ: '+resultats.mlDepart.toFixed(1)+' ml - '+resultats.prixDepart.toFixed(2)+' €',
+        'Profil finition: '+resultats.mlFinition.toFixed(1)+' ml - '+resultats.prixFinition.toFixed(2)+' €',
+        'Étanchéité: '+resultats.mlEtancheite.toFixed(1)+' ml - '+resultats.prixEtancheite.toFixed(2)+' €',
+        '--- Main d\'œuvre ---',
+        'Temps: '+resultats.tempsTotal.toFixed(1)+' h - '+resultats.prixMO.toFixed(2)+' €',
+        'TOTAL HT: '+resultats.totalHT.toFixed(2)+' €',
+        'TOTAL TTC: '+resultats.totalTTC.toFixed(2)+' €',
+    ];
+    lignes.forEach(function(l){doc.text(l,15,y);y+=7;});
+    doc.save('calepinage.pdf');
+};
 
-    console.log('READY');
+console.log('READY');
     </script>
+        
 </body>
 </html>
