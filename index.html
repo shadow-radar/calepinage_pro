@@ -3,51 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calepinage - Test</title>
+    <title>Calepinage - Test Onglets</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        button { padding: 15px 25px; margin: 10px; font-size: 18px; border: none; border-radius: 8px; background: #1a56db; color: white; }
-        .card { background: white; padding: 20px; border-radius: 10px; margin: 15px 0; }
-        input, select { padding: 10px; margin: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
-        .result { font-size: 20px; font-weight: bold; color: #1a56db; margin: 10px 0; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab { padding: 12px 18px; border: none; background: white; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .tab.active { background: #1a56db; color: white; }
+        .tab-content { display: none; background: white; padding: 20px; border-radius: 10px; }
+        .tab-content.active { display: block; }
+        button { padding: 12px 20px; background: #1a56db; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 5px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; margin: 5px; }
+        .result { font-weight: bold; color: #1a56db; }
     </style>
 </head>
 <body>
 
-    <h2>🏗️ Calepinage Test</h2>
+    <h2>🏗️ Calepinage Pro</h2>
     
-    <div class="card">
-        <h3>Dimensions surface (mm)</h3>
-        <input type="number" id="largeur" value="8000" placeholder="Largeur">
-        <input type="number" id="hauteur" value="6000" placeholder="Hauteur">
+    <div class="tabs">
+        <button class="tab active" data-tab="saisie">📐 Saisie</button>
+        <button class="tab" data-tab="resultat">📊 Résultat</button>
+        <button class="tab" data-tab="sauvegarde">💾 Sauvegarde</button>
     </div>
 
-    <div class="card">
-        <h3>Matériau</h3>
-        <input type="number" id="largeurLame" value="200" placeholder="Largeur lame">
-        <input type="number" id="hauteurLame" value="3000" placeholder="Longueur lame">
+    <!-- Onglet Saisie -->
+    <div id="tab-saisie" class="tab-content active">
+        <h3>Dimensions</h3>
+        <input type="number" id="largeur" value="8000" placeholder="Largeur mm">
+        <input type="number" id="hauteur" value="6000" placeholder="Hauteur mm">
+        <h3>Lame</h3>
+        <input type="number" id="largeurLame" value="200" placeholder="Largeur lame mm">
+        <input type="number" id="longueurLame" value="3000" placeholder="Longueur lame mm">
+        <br><br>
+        <button onclick="calculer()">🔍 Calculer</button>
     </div>
 
-    <button onclick="calculer()">🔍 Calculer</button>
-    
-    <div class="card">
-        <h3>Résultat</h3>
-        <p>Surface : <span id="surface" class="result">-</span> m²</p>
-        <p>Nombre de lames : <span id="nbLames" class="result">-</span></p>
+    <!-- Onglet Résultat -->
+    <div id="tab-resultat" class="tab-content">
+        <h3>Résultats</h3>
+        <p>Surface : <span class="result" id="surface">-</span> m²</p>
+        <p>Nombre de lames : <span class="result" id="nbLames">-</span></p>
+        <p>Chutes estimées : <span class="result" id="chutes">-</span>%</p>
+    </div>
+
+    <!-- Onglet Sauvegarde -->
+    <div id="tab-sauvegarde" class="tab-content">
+        <h3>Projets sauvegardés</h3>
+        <div id="listeProjets">Aucun projet pour l'instant</div>
+        <br>
+        <button onclick="sauvegarder()">💾 Sauvegarder ce calcul</button>
     </div>
 
     <script>
+        // Résultat stocké
+        var dernierResultat = null;
+        
+        // Gestion des onglets
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // Retirer actif de tous
+                document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                // Activer celui cliqué
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+                // Rafraîchir sauvegardes
+                if (this.dataset.tab === 'sauvegarde') afficherProjets();
+            });
+        });
+
+        // Calcul
         function calculer() {
             var largeur = parseFloat(document.getElementById('largeur').value);
             var hauteur = parseFloat(document.getElementById('hauteur').value);
             var largeurLame = parseFloat(document.getElementById('largeurLame').value);
-            var hauteurLame = parseFloat(document.getElementById('hauteurLame').value);
+            var longueurLame = parseFloat(document.getElementById('longueurLame').value);
             
             var surface = (largeur * hauteur) / 1000000;
-            var nbLames = Math.ceil(hauteur / largeurLame) * Math.ceil(largeur / hauteurLame);
+            var nbRangees = Math.ceil(hauteur / largeurLame);
+            var lamesParRangee = Math.ceil(largeur / longueurLame);
+            var nbLames = nbRangees * lamesParRangee;
+            var chutes = ((nbLames * largeurLame * longueurLame / 1000000 - surface) / (nbLames * largeurLame * longueurLame / 1000000) * 100).toFixed(1);
             
             document.getElementById('surface').textContent = surface.toFixed(2);
             document.getElementById('nbLames').textContent = nbLames;
+            document.getElementById('chutes').textContent = chutes;
+            
+            // Stocker
+            dernierResultat = { surface: surface.toFixed(2), nbLames: nbLames, chutes: chutes, date: new Date().toLocaleString() };
+            
+            // Aller à l'onglet résultat
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            document.querySelector('[data-tab="resultat"]').classList.add('active');
+            document.getElementById('tab-resultat').classList.add('active');
+        }
+
+        // Sauvegarde
+        function sauvegarder() {
+            if (!dernierResultat) { alert('Faites d\'abord un calcul'); return; }
+            var projets = JSON.parse(localStorage.getItem('projets') || '[]');
+            projets.push(dernierResultat);
+            localStorage.setItem('projets', JSON.stringify(projets));
+            alert('✅ Sauvegardé !');
+            afficherProjets();
+        }
+
+        function afficherProjets() {
+            var projets = JSON.parse(localStorage.getItem('projets') || '[]');
+            var container = document.getElementById('listeProjets');
+            if (projets.length === 0) {
+                container.innerHTML = 'Aucun projet sauvegardé';
+                return;
+            }
+            container.innerHTML = projets.map(function(p, i) {
+                return '<p>' + p.date + ' - Surface: ' + p.surface + ' m² - ' + p.nbLames + ' lames - Chutes: ' + p.chutes + '%</p>';
+            }).join('');
         }
     </script>
 
