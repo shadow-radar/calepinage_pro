@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calepinage Pro">
+<link rel="manifest" href="data:application/json,{%22name%22:%22Calepinage+Pro%22,%22short_name%22:%22Calepinage%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%231e3a8a%22,%22theme_color%22:%22%231e3a8a%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg+xmlns=%27http://www.w3.org/2000/svg%27+viewBox=%270+0+100+100%27%3E%3Ctext+y=%27.9em%27+font-size=%2790%27%3E%F0%9F%8F%97%EF%B8%8F%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]}">
 <title>Calepinage Pro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -70,6 +76,14 @@
 
   .empty { color: #94a3b8; font-size: .85em; font-style: italic; }
   .actions { display: flex; gap: 8px; margin-top: 12px; }
+
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-success:hover { background: #15803d; }
+  .btn-warn { background: #f59e0b; color: #fff; }
+  .btn-warn:hover { background: #d97706; }
+  .projet-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 10px 20px; border-radius: 10px; font-size: .85em; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
 
   @media (max-width: 500px) {
     .grid2, .grid3 { grid-template-columns: 1fr; }
@@ -147,6 +161,11 @@
     </div>
   </div>
 
+  <div class="projet-bar">
+    <button class="btn btn-success" id="btnSauv">💾 Sauvegarder projet</button>
+    <button class="btn btn-warn" id="btnCharg">📂 Charger projet</button>
+    <input type="file" id="fileCharg" accept=".json" style="display:none">
+  </div>
   <div class="actions">
     <button class="btn btn-primary" id="btnCalc">🔍 Calculer le calepinage</button>
   </div>
@@ -315,11 +334,64 @@ document.getElementById('btnCalc').addEventListener('click', function() {
   var sUtile = Math.max(0, (larg * hPose) / 1e6 - sOuv);
 
   // ===== LAMES =====
-  var nbRangees    = Math.ceil(hPose / (lu + joint));
+  // Coefficient de perte matériau (chutes non réutilisables, découpes, casses)
+  var coeffChuteMat = { composite: 0.05, fibrociment: 0.07, metal: 0.03 };
+  var typeMat2 = document.getElementById('typeMat').value;
+  var coeffMat = coeffChuteMat[typeMat2] || 0.10;
+
+  // Calcul rangée par rangée : nbLames = ceil(largeur / hu) sans report
+  // La chute géométrique de fin de rangée est perdue (pire cas réaliste)
+  var nbTotal = 0;
+  var sAchetee = 0;
+  var sChuteGeo = 0; // chutes géométriques réelles
+
+  var hMinP2 = Math.min(hgVal, hdVal);
+  var hTotPose2 = (type === 'pignon') ? (hcVal - arH) : (Math.max(hgVal, hdVal) - arH);
+  var nbRTot2 = Math.ceil(hTotPose2 / (lu + joint));
+
+  for (var rr = 0; rr < nbRTot2; rr++) {
+    var yMidR = arH + (rr + 0.5) * (lu + joint);
+    var largR;
+    if (type === 'facade') {
+      // Interpolation linéaire hg→hd
+      var progF = Math.min(yMidR / Math.max(hgVal, hdVal), 1);
+      largR = larg;
+    } else {
+      if (yMidR <= hMinP2) {
+        largR = larg;
+      } else {
+        var hTriP = hcVal - hMinP2;
+        var progTri = (yMidR - hMinP2) / hTriP;
+        largR = larg * (1 - progTri);
+      }
+    }
+    if (largR <= 10) continue;
+
+    var nbL = Math.ceil(largR / hu);
+    nbTotal += nbL;
+    sAchetee += (nbL * lu * hu) / 1e6;
+    // Chute géométrique de cette rangée
+    var chuteLin = (nbL * hu) - largR;
+    sChuteGeo += (chuteLin * lu) / 1e6;
+    // Chutes supplémentaires dues aux découpes autour des ouvertures
+    var yBotR = arH + rr * (lu + joint);
+    var yTopR = yBotR + lu;
+    ouvertures.forEach(function(o) {
+      if (o.y < yTopR && (o.y + o.haut) > yBotR) {
+        // Cette rangée croise une ouverture → chute de découpe
+        var intersectH = Math.min(yTopR, o.y + o.haut) - Math.max(yBotR, o.y);
+        var intersectL = o.larg;
+        sChuteGeo += (intersectH * intersectL) / 1e6;
+      }
+    });
+  }
+
+  var nbRangees = nbRTot2;
   var lamesParRangee = Math.ceil(larg / hu);
-  var nbTotal      = nbRangees * lamesParRangee;
-  var sAchetee     = (nbTotal * lu * hu) / 1e6;
-  var tauxChute    = sAchetee > 0 ? ((sAchetee - sUtile) / sAchetee * 100) : 0;
+
+  // Taux de chute = chutes géométriques + pertes matériau
+  var tauxChuteGeo = sAchetee > 0 ? (sChuteGeo / sAchetee * 100) : 0;
+  var tauxChute = tauxChuteGeo + (coeffMat * 100);
 
   // ===== ACCESSOIRES =====
   var visM2  = zVent === 'forte' ? 8 : 6;
@@ -423,40 +495,56 @@ function dessiner() {
     ctx.fillText('Anti-rongeur ' + res.arH + 'mm', mL + 6, yBase - 4);
   }
 
-  // --- LAMES RECTANGLE ---
   var hR = (res.lu + res.joint) * sc;
   var lP = res.hu * sc;
 
-  for (var i = 0; i < res.nbRangees; i++) {
-    var yLame = yBase - arPx - (i + 1) * hR;
-    var hLame = Math.min(hR - res.joint * sc, posePx - i * hR);
-    if (hLame <= 0) break;
-    if (yLame < yPoseTop) {
-      hLame -= (yPoseTop - yLame);
-      yLame = yPoseTop;
-    }
-    if (hLame <= 0) continue;
+  // --- CLIP GLOBAL : forme totale du pignon ou facade ---
+  ctx.save();
+  ctx.beginPath();
+  if (res.type === 'facade') {
+    ctx.moveTo(mL,          yBase - hgPx);
+    ctx.lineTo(mL + largPx, yBase - hdPx);
+    ctx.lineTo(mL + largPx, yBase - arPx);
+    ctx.lineTo(mL,          yBase - arPx);
+  } else {
+    ctx.moveTo(mL,            yBase - res.hg * sc);
+    ctx.lineTo(mL + largPx/2, yBase - res.hc * sc);
+    ctx.lineTo(mL + largPx,   yBase - res.hd * sc);
+    ctx.lineTo(mL + largPx,   yBase - arPx);
+    ctx.lineTo(mL,            yBase - arPx);
+  }
+  ctx.closePath();
+  ctx.clip();
 
-    for (var j = 0; j < res.lamesParRangee; j++) {
+  // --- LAMES : de bas en haut, le clip fait le masquage ---
+  var hautTotLames = res.type === 'pignon'
+    ? (res.hc - res.arH)
+    : (Math.max(res.hg, res.hd) - res.arH);
+  var nbRTotal = Math.ceil(hautTotLames / (res.lu + res.joint));
+
+  for (var i = 0; i < nbRTotal; i++) {
+    var yLame = yBase - arPx - (i + 1) * hR;
+    var hLame = hR - res.joint * sc;
+    if (hLame <= 0 || yLame + hLame < mT) continue;
+
+    var nbLamesRow = Math.ceil(largPx / lP) + 1;
+    for (var j = 0; j < nbLamesRow; j++) {
       var xLame = mL + j * lP;
-      var reste = res.larg - j * res.hu;
-      var wLame = Math.min(lP, reste * sc);
+      var wLame = Math.min(lP, mL + largPx - xLame);
       if (wLame <= 0) continue;
 
-      var ratio = reste / res.hu;
+      var ratio = wLame / lP;
       if (ratio >= 0.95) ctx.fillStyle = '#86efac88';
       else if (ratio > 0.05) ctx.fillStyle = '#fbbf2488';
       else ctx.fillStyle = '#fca5a588';
 
-      var isOuv = false;
+        var isOuv = false;
       res.ouvertures.forEach(function(o) {
         var ox = mL + o.x * sc, ow = o.larg * sc;
         var oy = yBase - (o.y + o.haut) * sc, oh = o.haut * sc;
-        if (xLame < ox + ow && xLame + wLame > ox && yLame < oy + oh && yLame + hLame > oy) {
-          isOuv = true;
-        }
+        if (xLame < ox + ow && xLame + wLame > ox && yLame < oy + oh && yLame + hLame > oy) isOuv = true;
       });
-      if (isOuv) ctx.fillStyle = '#94a3b855';
+      if (isOuv) { ctx.fillStyle = '#94a3b855'; }
 
       ctx.fillRect(xLame, yLame, wLame, hLame);
       ctx.strokeStyle = '#94a3b8';
@@ -464,6 +552,8 @@ function dessiner() {
       ctx.strokeRect(xLame, yLame, wLame, hLame);
     }
   }
+
+  ctx.restore();
 
   // --- OUVERTURES ---
   res.ouvertures.forEach(function(o) {
@@ -483,60 +573,12 @@ function dessiner() {
     ctx.textAlign = 'left';
   });
 
-  // --- TRIANGLE PIGNON + LAMES DANS LE TRIANGLE ---
+  // --- LABEL PIGNON ---
   if (res.type === 'pignon') {
-    var hMin = Math.min(res.hg, res.hd);
-    var hMax = Math.max(res.hg, res.hd);
-    var yBaseTri = yBase - hMin * sc;
-
-    // Dessin du contour du triangle
-    ctx.beginPath();
-    ctx.moveTo(mL, yBaseTri - (res.hg - hMin) * sc);
-    ctx.lineTo(mL + largPx / 2, yBaseTri - (res.hc - hMin) * sc);
-    ctx.lineTo(mL + largPx, yBaseTri - (res.hd - hMin) * sc);
-    ctx.lineTo(mL + largPx, yBaseTri);
-    ctx.lineTo(mL, yBaseTri);
-    ctx.closePath();
-    ctx.fillStyle = '#e2e8f066';
-    ctx.fill();
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // LAMES DANS LE TRIANGLE
-    var hTriMax = Math.max(res.hg - hMin, res.hd - hMin, res.hc - hMin);
-    var nbRTri = Math.ceil(hTriMax / (res.lu + res.joint));
-    var hRTri = (res.lu + res.joint) * sc;
-
-    for (var iT = 0; iT < Math.min(nbRTri, 20); iT++) {
-      var yTri = yBaseTri - (iT + 1) * hRTri;
-      var progression = (iT + 0.5) / nbRTri;
-      var largG = res.larg * (1 - progression * (res.hg - hMin) / hTriMax);
-      var largD = res.larg * (1 - progression * (res.hd - hMin) / hTriMax);
-      var largMoy = (largG + largD) / 2;
-      var decalX = (res.larg * sc - largMoy * sc) / 2;
-
-      var nbLamesTri = Math.ceil(largMoy / res.hu);
-      for (var jT = 0; jT < nbLamesTri; jT++) {
-        var xTri = mL + decalX + jT * lP;
-        var resteT = largMoy - jT * res.hu;
-        var wTri = Math.min(lP, resteT * sc);
-        if (wTri <= 0) continue;
-        var ratioT = resteT / res.hu;
-        if (ratioT >= 0.95) ctx.fillStyle = '#86efac88';
-        else if (ratioT > 0.05) ctx.fillStyle = '#fbbf2488';
-        else ctx.fillStyle = '#fca5a588';
-
-        ctx.fillRect(xTri, yTri, wTri, hRTri - res.joint * sc);
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(xTri, yTri, wTri, hRTri - res.joint * sc);
-      }
-    }
-
     ctx.fillStyle = '#64748b';
     ctx.font = '10px sans-serif';
-    ctx.fillText('Pignon', mL + 6, yBaseTri - (res.hc - hMin) * sc / 2);
+    var hMinLbl = Math.min(res.hg, res.hd);
+    ctx.fillText('Pignon', mL + 6, yBase - hMinLbl * sc - (res.hc - hMinLbl) * sc / 2);
   }
 
   // --- CONTOUR GÉNÉRAL ---
@@ -596,6 +638,118 @@ function dessiner() {
 }
 
 // ============================================================
+//  TOAST
+// ============================================================
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ============================================================
+//  SAUVEGARDE PROJET (JSON)
+// ============================================================
+document.getElementById('btnSauv').addEventListener('click', function() {
+  var projet = {
+    v: 1,
+    type: document.querySelector('input[name="surfType"]:checked').value,
+    larg: document.getElementById('larg').value,
+    hg: document.getElementById('hg').value,
+    hd: document.getElementById('hd').value,
+    hc: document.getElementById('hc').value,
+    lu: document.getElementById('lu').value,
+    hu: document.getElementById('hu').value,
+    joint: document.getElementById('joint').value,
+    typeMat: document.getElementById('typeMat').value,
+    lameAir: document.getElementById('lameAir').value,
+    antiRongeur: document.getElementById('antiRongeur').value,
+    zoneVent: document.getElementById('zoneVent').value,
+    ouvertures: ouvertures,
+    savedAt: new Date().toLocaleDateString('fr-FR')
+  };
+  var blob = new Blob([JSON.stringify(projet, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'calepinage_' + projet.savedAt.replace(/\//g,'-') + '.json';
+  a.click();
+  showToast('✅ Projet sauvegardé !');
+});
+
+// ============================================================
+//  CHARGEMENT PROJET (JSON)
+// ============================================================
+document.getElementById('btnCharg').addEventListener('click', function() {
+  document.getElementById('fileCharg').click();
+});
+
+document.getElementById('fileCharg').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var p = JSON.parse(ev.target.result);
+      if (!p.v) throw new Error('Format invalide');
+
+      // Restaurer type surface
+      document.querySelectorAll('input[name="surfType"]').forEach(function(r) {
+        r.checked = r.value === p.type;
+      });
+      document.getElementById('fHC').style.display = p.type === 'pignon' ? 'block' : 'none';
+
+      // Restaurer dimensions
+      document.getElementById('larg').value = p.larg || 8000;
+      document.getElementById('hg').value   = p.hg   || 4000;
+      document.getElementById('hd').value   = p.hd   || 4000;
+      document.getElementById('hc').value   = p.hc   || 6000;
+
+      // Restaurer matériau
+      document.getElementById('lu').value         = p.lu      || 200;
+      document.getElementById('hu').value         = p.hu      || 3000;
+      document.getElementById('joint').value      = p.joint   || 8;
+      document.getElementById('typeMat').value    = p.typeMat || 'composite';
+
+      // Restaurer accessoires
+      document.getElementById('lameAir').value    = p.lameAir     || 25;
+      document.getElementById('antiRongeur').value= p.antiRongeur || 300;
+      document.getElementById('zoneVent').value   = p.zoneVent    || 'normale';
+
+      // Restaurer ouvertures
+      ouvertures = p.ouvertures || [];
+      renderOuv();
+
+      showToast('📂 Projet chargé — ' + (p.savedAt || ''));
+    } catch(err) {
+      alert('Fichier invalide : ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  // Reset input pour pouvoir recharger le même fichier
+  this.value = '';
+});
+
+// ============================================================
+//  PWA — Service Worker inline
+// ============================================================
+if ('serviceWorker' in navigator) {
+  var swCode = `
+const CACHE = 'calepinage-v1';
+const ASSETS = [location.href];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+  `;
+  var blob = new Blob([swCode], { type: 'application/javascript' });
+  var swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(function() {});
+}
+
+// ============================================================
 //  PDF
 // ============================================================
 document.getElementById('btnPDF').addEventListener('click', function() {
@@ -612,5 +766,6 @@ document.getElementById('btnPDF').addEventListener('click', function() {
   pdf.save('calepinage.pdf');
 });
 </script>
+<div class="toast" id="toast"></div>
 </body>
 </html>
