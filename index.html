@@ -242,124 +242,136 @@
     };
 
     function dessiner() {
-        var canvas = document.getElementById('canvasCalepinage');
-        if (!canvas || !resultats) return;
-        var container = canvas.parentElement;
-        canvas.width = Math.max(container.clientWidth, 300);
-        var hauteurMax = resultats.type === 'pignon' ? Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
-        var ratio = hauteurMax / resultats.l;
-        canvas.height = Math.min(canvas.width * ratio, 600);
-        var ctx = canvas.getContext('2d');
-        var w = canvas.width;
-        var h = canvas.height;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, w, h);
-        var pad = 15;
-        var scale = Math.min((w - pad * 2) / resultats.l, (h - pad * 2) / hauteurMax);
-        var sx = pad;
-        var sy = pad + (h - pad * 2 - hauteurMax * scale) / 2;
+    var canvas = document.getElementById('canvasCalepinage');
+    if (!canvas || !resultats) return;
+    var container = canvas.parentElement;
+    canvas.width = Math.max(container.clientWidth, 300);
+    var hauteurMax = resultats.type === 'pignon' ? Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
+    var ratio = hauteurMax / resultats.l;
+    canvas.height = Math.min(canvas.width * ratio, 600);
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width;
+    var h = canvas.height;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    var pad = 15;
+    var scale = Math.min((w - pad * 2) / resultats.l, (h - pad * 2) / hauteurMax);
+    var sx = pad;
+    var sy = pad + (h - pad * 2 - hauteurMax * scale) / 2;
 
-        // Anti-rongeur
-        var hauteurAntiPx = resultats.hauteurAntiRongeur * scale;
-        ctx.fillStyle = '#d1d5db';
-        ctx.fillRect(sx, sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale, resultats.l * scale, hauteurAntiPx);
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('Anti-rongeur', sx + 10, sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale + 15);
+    // --- Anti-rongeur ---
+    var hauteurAntiPx = resultats.hauteurAntiRongeur * scale;
+    var yAnti = sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale;
+    ctx.fillStyle = '#d1d5db';
+    ctx.fillRect(sx, yAnti, resultats.l * scale, hauteurAntiPx);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Anti-rongeur', sx + 10, yAnti + 15);
 
-        // Bardage
-        var hauteurBardeePx = (resultats.hg - resultats.hauteurAntiRongeur) * scale;
-        var nbR = Math.ceil((resultats.hg - resultats.hauteurAntiRongeur) / (resultats.lu + resultats.joint));
-        var hR = (resultats.lu + resultats.joint) * scale;
+    // --- Rectangle (partie basse) ---
+    var hauteurMin = Math.min(resultats.hg, resultats.hd);
+    var hauteurBardeePx = (hauteurMin - resultats.hauteurAntiRongeur) * scale;
+    var nbR = Math.ceil((hauteurMin - resultats.hauteurAntiRongeur) / (resultats.lu + resultats.joint));
+    var hR = (resultats.lu + resultats.joint) * scale;
 
-        for (var i = 0; i < Math.min(nbR, 30); i++) {
-            var y = sy + i * hR;
-            if (y > sy + hauteurBardeePx) break;
-            var largeurY = resultats.l;
-            var nbP2 = Math.ceil(largeurY / resultats.hu);
-            var lP = resultats.hu * scale;
-            for (var j = 0; j < nbP2; j++) {
-                var x = sx + j * lP;
-                var reste = largeurY - j * resultats.hu;
-                var lr = Math.min(lP, Math.max(0, reste * scale));
-                if (lr <= 0) continue;
-                ctx.fillStyle = (reste > resultats.hu * 0.95) ? '#86efac66' : (reste > 0 ? '#fbbf2466' : '#fca5a566');
-                ctx.fillRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
+    for (var i = 0; i < Math.min(nbR, 30); i++) {
+        var y = sy + i * hR;
+        if (y > sy + hauteurBardeePx) break;
+        var nbP2 = Math.ceil(resultats.l / resultats.hu);
+        var lP = resultats.hu * scale;
+        for (var j = 0; j < nbP2; j++) {
+            var x = sx + j * lP;
+            var reste = resultats.l - j * resultats.hu;
+            var lr = Math.min(lP, Math.max(0, reste * scale));
+            if (lr <= 0) continue;
+            ctx.fillStyle = (reste > resultats.hu * 0.95) ? '#86efac66' : (reste > 0 ? '#fbbf2466' : '#fca5a566');
+            ctx.fillRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
+        }
+    }
+
+    // --- Triangle du pignon ---
+    if (resultats.type === 'pignon') {
+        var yTriangleBase = sy + hauteurMin * scale;
+        var hTriangleGauche = (resultats.hg - hauteurMin) * scale;
+        var hTriangleDroite = (resultats.hd - hauteurMin) * scale;
+        var hTriangleCentral = (resultats.hc - hauteurMin) * scale;
+
+        // Fond du triangle (gris clair)
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(sx, yTriangleBase);
+        ctx.lineTo(sx + resultats.l * scale, yTriangleBase);
+        ctx.lineTo(sx + resultats.l * scale, yTriangleBase - hTriangleDroite);
+        ctx.lineTo(sx + resultats.l * scale / 2, yTriangleBase - hTriangleCentral);
+        ctx.lineTo(sx, yTriangleBase - hTriangleGauche);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Lames dans le triangle
+        var hTriangleMax = Math.max(hTriangleGauche, hTriangleDroite, hTriangleCentral);
+        var nbRTriangle = Math.ceil(hTriangleMax / (resultats.lu + resultats.joint));
+        var hRTriangle = (resultats.lu + resultats.joint) * scale;
+
+        for (var i2 = 0; i2 < Math.min(nbRTriangle, 20); i2++) {
+            var y2 = yTriangleBase - i2 * hRTriangle;
+            if (y2 < sy) break;
+            var progression = i2 / nbRTriangle;
+            var largeurGauche = resultats.l * (1 - progression * (resultats.hg - hauteurMin) / hTriangleMax);
+            var largeurDroite = resultats.l * (1 - progression * (resultats.hd - hauteurMin) / hTriangleMax);
+            var largeurY2 = (largeurGauche + largeurDroite) / 2;
+            var nbP3 = Math.ceil(largeurY2 / resultats.hu);
+            var lP2 = resultats.hu * scale;
+            var decalageX = (resultats.l * scale - largeurY2 * scale) / 2;
+            for (var j2 = 0; j2 < nbP3; j2++) {
+                var x2 = sx + decalageX + j2 * lP2;
+                var reste2 = largeurY2 - j2 * resultats.hu;
+                var lr2 = Math.min(lP2, Math.max(0, reste2 * scale));
+                if (lr2 <= 0) continue;
+                ctx.fillStyle = (reste2 > resultats.hu * 0.95) ? '#86efac66' : (reste2 > 0 ? '#fbbf2466' : '#fca5a566');
+                ctx.fillRect(x2, y2, lr2, Math.min(hRTriangle, yTriangleBase - y2));
                 ctx.strokeStyle = '#64748b';
                 ctx.lineWidth = 0.5;
-                ctx.strokeRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
+                ctx.strokeRect(x2, y2, lr2, Math.min(hRTriangle, yTriangleBase - y2));
             }
         }
-
-        // Triangle du pignon
-        if (resultats.type === 'pignon') {
-            var hTriangle = resultats.hc - Math.min(resultats.hg, resultats.hd);
-            var yTriangle = sy + Math.min(resultats.hg, resultats.hd) * scale;
-            ctx.fillStyle = '#e2e8f0';
-            ctx.beginPath();
-            ctx.moveTo(sx, yTriangle);
-            ctx.lineTo(sx + resultats.l * scale, yTriangle);
-            ctx.lineTo(sx + resultats.l * scale / 2, sy + resultats.hc * scale);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Lames dans le triangle
-            var nbRTriangle = Math.ceil(hTriangle / (resultats.lu + resultats.joint));
-            var hRTriangle = (resultats.lu + resultats.joint) * scale;
-            for (var i2 = 0; i2 < Math.min(nbRTriangle, 15); i2++) {
-                var y2 = yTriangle + i2 * hRTriangle;
-                if (y2 > sy + resultats.hc * scale) break;
-                var progression = (i2 + 0.5) / nbRTriangle;
-                var largeurY2 = resultats.l * (1 - progression);
-                var nbP3 = Math.ceil(largeurY2 / resultats.hu);
-                var lP2 = resultats.hu * scale;
-                for (var j2 = 0; j2 < nbP3; j2++) {
-                    var x2 = sx + (resultats.l * scale - largeurY2 * scale) / 2 + j2 * lP2;
-                    var reste2 = largeurY2 - j2 * resultats.hu;
-                    var lr2 = Math.min(lP2, Math.max(0, reste2 * scale));
-                    if (lr2 <= 0) continue;
-                    ctx.fillStyle = (reste2 > resultats.hu * 0.95) ? '#86efac66' : (reste2 > 0 ? '#fbbf2466' : '#fca5a566');
-                    ctx.fillRect(x2, y2, lr2, Math.min(hRTriangle, sy + resultats.hc * scale - y2));
-                    ctx.strokeStyle = '#64748b';
-                    ctx.lineWidth = 0.5;
-                    ctx.strokeRect(x2, y2, lr2, Math.min(hRTriangle, sy + resultats.hc * scale - y2));
-                }
-            }
-        }
-
-        // Ouvertures
-        resultats.ouvertures.forEach(function(o) {
-            ctx.fillStyle = '#94a3b866';
-            ctx.fillRect(sx + o.x * scale, sy + o.y * scale, o.largeur * scale, o.hauteur * scale);
-            ctx.strokeStyle = '#475569';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(sx + o.x * scale, sy + o.y * scale, o.largeur * scale, o.hauteur * scale);
-            ctx.fillStyle = '#1e293b';
-            ctx.font = '8px sans-serif';
-            ctx.fillText(o.type, sx + o.x * scale + 4, sy + o.y * scale + 12);
-        });
-
-        // Joint dilatation
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx + resultats.l * scale, sy);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#ef4444';
-        ctx.font = '8px sans-serif';
-        ctx.fillText('Joint dilatation', sx + 4, sy + 10);
-
-        // Cote
-        ctx.fillStyle = '#334155';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(resultats.l + ' mm', sx + resultats.l * scale / 2 - 20, sy + hauteurMax * scale + 12);
     }
+
+    // --- Ouvertures ---
+    resultats.ouvertures.forEach(function(o) {
+        ctx.fillStyle = '#94a3b866';
+        ctx.fillRect(sx + o.x * scale, sy + o.y * scale, o.largeur * scale, o.hauteur * scale);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(sx + o.x * scale, sy + o.y * scale, o.largeur * scale, o.hauteur * scale);
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '8px sans-serif';
+        ctx.fillText(o.type, sx + o.x * scale + 4, sy + o.y * scale + 12);
+    });
+
+    // --- Joint dilatation ---
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + resultats.l * scale, sy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '8px sans-serif';
+    ctx.fillText('Joint dilatation', sx + 4, sy + 10);
+
+    // --- Cote ---
+    ctx.fillStyle = '#334155';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(resultats.l + ' mm', sx + resultats.l * scale / 2 - 20, sy + hauteurMax * scale + 12);
+}
 
     document.getElementById('btnPDF').onclick = function() {
         if (!resultats) { alert('Faites un calcul d\'abord'); return; }
