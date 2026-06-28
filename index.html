@@ -242,23 +242,30 @@
         };
 
         function dessiner() {
-        var canvas = document.getElementById('canvasCalepinage');
-        if (!canvas || !resultats) return;
-        var container = canvas.parentElement;
-        canvas.width = Math.max(container.clientWidth, 300);
-    var hauteurMax = resultats.type === 'pignon' ? Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
+    var canvas = document.getElementById('canvasCalepinage');
+    if (!canvas || !resultats) return;
+    var container = canvas.parentElement;
+    canvas.width = Math.max(container.clientWidth, 300);
+    
+    // Hauteur max du pignon (pour le ratio)
+    var hauteurMax = resultats.type === 'pignon' ? 
+        Math.max(resultats.hg, resultats.hd, resultats.hc) : resultats.hg;
     var ratio = hauteurMax / resultats.l;
     canvas.height = Math.min(canvas.width * ratio, 600);
+    
     var ctx = canvas.getContext('2d');
     var w = canvas.width;
     var h = canvas.height;
+    
+    // Fond blanc
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, w, h);
+    
     var pad = 15;
     var scale = Math.min((w - pad * 2) / resultats.l, (h - pad * 2) / hauteurMax);
     var sx = pad;
     var sy = pad + (h - pad * 2 - hauteurMax * scale) / 2;
-
+    
     // --- Anti-rongeur ---
     var hauteurAntiPx = resultats.hauteurAntiRongeur * scale;
     var yAnti = sy + (resultats.hg - resultats.hauteurAntiRongeur) * scale;
@@ -267,13 +274,13 @@
     ctx.fillStyle = '#6b7280';
     ctx.font = '10px sans-serif';
     ctx.fillText('Anti-rongeur', sx + 10, yAnti + 15);
-
-    // --- Rectangle (partie basse) ---
+    
+    // --- RECTANGLE (partie basse) ---
     var hauteurMin = Math.min(resultats.hg, resultats.hd);
     var hauteurBardeePx = (hauteurMin - resultats.hauteurAntiRongeur) * scale;
     var nbR = Math.ceil((hauteurMin - resultats.hauteurAntiRongeur) / (resultats.lu + resultats.joint));
     var hR = (resultats.lu + resultats.joint) * scale;
-
+    
     for (var i = 0; i < Math.min(nbR, 30); i++) {
         var y = sy + i * hR;
         if (y > sy + hauteurBardeePx) break;
@@ -291,61 +298,62 @@
             ctx.strokeRect(x, y, lr, Math.min(hR, hauteurBardeePx - (y - sy)));
         }
     }
-
-            // --- Triangle du pignon ---
-if (resultats.type === 'pignon') {
-    var hauteurMin = Math.min(resultats.hg, resultats.hd);
-    var yTriangleBase = sy + hauteurMin * scale;
-    var hTriangleGauche = (resultats.hg - hauteurMin) * scale;
-    var hTriangleDroite = (resultats.hd - hauteurMin) * scale;
-    var hTriangleCentral = (resultats.hc - hauteurMin) * scale;
-
-    // Fond du triangle (gris clair)
-    ctx.fillStyle = '#e2e8f0';
-    ctx.beginPath();
-    // Point de départ : gauche
-    ctx.moveTo(sx, yTriangleBase - hTriangleGauche);
-    // Pointe : centre
-    ctx.lineTo(sx + resultats.l * scale / 2, yTriangleBase - hTriangleCentral);
-    // Point d'arrivée : droite
-    ctx.lineTo(sx + resultats.l * scale, yTriangleBase - hTriangleDroite);
-    // Retour à la base
-    ctx.lineTo(sx + resultats.l * scale, yTriangleBase);
-    ctx.lineTo(sx, yTriangleBase);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Lames dans le triangle
-    var hTriangleMax = Math.max(hTriangleGauche, hTriangleDroite, hTriangleCentral);
-    var nbRTriangle = Math.ceil(hTriangleMax / (resultats.lu + resultats.joint));
-    var hRTriangle = (resultats.lu + resultats.joint) * scale;
-
-    for (var i2 = 0; i2 < Math.min(nbRTriangle, 20); i2++) {
-        var y2 = yTriangleBase - i2 * hRTriangle;
-        if (y2 < sy) break;
-        var progression = i2 / nbRTriangle;
-        var largeurGauche = resultats.l * (1 - progression * (resultats.hg - hauteurMin) / hTriangleMax);
-        var largeurDroite = resultats.l * (1 - progression * (resultats.hd - hauteurMin) / hTriangleMax);
-        var largeurY2 = (largeurGauche + largeurDroite) / 2;
-        var nbP3 = Math.ceil(largeurY2 / resultats.hu);
-        var lP2 = resultats.hu * scale;
-        var decalageX = (resultats.l * scale - largeurY2 * scale) / 2;
-        for (var j2 = 0; j2 < nbP3; j2++) {
-            var x2 = sx + decalageX + j2 * lP2;
-            var reste2 = largeurY2 - j2 * resultats.hu;
-            var lr2 = Math.min(lP2, Math.max(0, reste2 * scale));
-            if (lr2 <= 0) continue;
-            ctx.fillStyle = (reste2 > resultats.hu * 0.95) ? '#86efac66' : (reste2 > 0 ? '#fbbf2466' : '#fca5a566');
-            ctx.fillRect(x2, y2, lr2, Math.min(hRTriangle, yTriangleBase - y2));
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(x2, y2, lr2, Math.min(hRTriangle, yTriangleBase - y2));
+    
+    // --- TRIANGLE (partie haute) ---
+    if (resultats.type === 'pignon') {
+        var hauteurMin2 = Math.min(resultats.hg, resultats.hd);
+        var yBase = sy + hauteurMin2 * scale;
+        var hG = (resultats.hg - hauteurMin2) * scale;
+        var hD = (resultats.hd - hauteurMin2) * scale;
+        var hC = (resultats.hc - hauteurMin2) * scale;
+        
+        // 1. Dessiner le contour du triangle (gris clair)
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(sx, yBase - hG);
+        ctx.lineTo(sx + resultats.l * scale / 2, yBase - hC);
+        ctx.lineTo(sx + resultats.l * scale, yBase - hD);
+        ctx.lineTo(sx + resultats.l * scale, yBase);
+        ctx.lineTo(sx, yBase);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // 2. Lames dans le triangle (simplifiées)
+        var hTriangleMax = Math.max(hG, hD, hC);
+        var nbRTriangle = Math.ceil(hTriangleMax / (resultats.lu + resultats.joint));
+        var hRTriangle = (resultats.lu + resultats.joint) * scale;
+        
+        for (var i2 = 0; i2 < Math.min(nbRTriangle, 15); i2++) {
+            var y2 = yBase - i2 * hRTriangle;
+            if (y2 < sy) break;
+            
+            // Calcul de la largeur à cette hauteur (interpolation linéaire)
+            var progression = i2 / nbRTriangle;
+            var largeurG = resultats.l * (1 - progression * (resultats.hg - hauteurMin2) / hTriangleMax);
+            var largeurD = resultats.l * (1 - progression * (resultats.hd - hauteurMin2) / hTriangleMax);
+            var largeurY2 = (largeurG + largeurD) / 2;
+            
+            var nbP3 = Math.ceil(largeurY2 / resultats.hu);
+            var lP2 = resultats.hu * scale;
+            var decalageX = (resultats.l * scale - largeurY2 * scale) / 2;
+            
+            for (var j2 = 0; j2 < nbP3; j2++) {
+                var x2 = sx + decalageX + j2 * lP2;
+                var reste2 = largeurY2 - j2 * resultats.hu;
+                var lr2 = Math.min(lP2, Math.max(0, reste2 * scale));
+                if (lr2 <= 0) continue;
+                
+                ctx.fillStyle = (reste2 > resultats.hu * 0.95) ? '#86efac66' : (reste2 > 0 ? '#fbbf2466' : '#fca5a566');
+                ctx.fillRect(x2, y2, lr2, Math.min(hRTriangle, yBase - y2));
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(x2, y2, lr2, Math.min(hRTriangle, yBase - y2));
+            }
         }
     }
-}
     
     // --- Ouvertures ---
     resultats.ouvertures.forEach(function(o) {
@@ -358,8 +366,8 @@ if (resultats.type === 'pignon') {
         ctx.font = '8px sans-serif';
         ctx.fillText(o.type, sx + o.x * scale + 4, sy + o.y * scale + 12);
     });
-
-    // --- Joint dilatation ---
+    
+    // --- Joint de dilatation ---
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
@@ -371,7 +379,7 @@ if (resultats.type === 'pignon') {
     ctx.fillStyle = '#ef4444';
     ctx.font = '8px sans-serif';
     ctx.fillText('Joint dilatation', sx + 4, sy + 10);
-
+    
     // --- Cote ---
     ctx.fillStyle = '#334155';
     ctx.font = '10px sans-serif';
