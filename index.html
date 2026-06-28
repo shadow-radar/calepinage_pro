@@ -63,6 +63,7 @@
         <button class="tab" data-tab="metre">📊 Métré</button>
     </div>
 
+    <!-- SAISIE -->
     <div id="tab-saisie" class="tab-content active">
         <div class="card">
             <h2>Type de surface</h2>
@@ -71,6 +72,7 @@
                 <label><input type="radio" name="surfaceType" value="pignon"> Pignon</label>
             </div>
         </div>
+
         <div class="card">
             <h2>Dimensions (mm)</h2>
             <div class="grid2">
@@ -80,11 +82,13 @@
                 <div class="input-group" id="hauteurDGroup" style="display:none"><label>Hauteur droite</label><input type="number" id="hauteurD" value="6000"></div>
             </div>
         </div>
+
         <div class="card">
             <h2>🪟 Ouvertures</h2>
             <div id="listeOuvertures"><p style="color:#94a3b8;font-size:.85em">Aucune</p></div>
             <button class="btn-secondary" id="btnAjoutOuv">+ Ajouter</button>
         </div>
+
         <div class="card">
             <h2>📦 Matériau</h2>
             <div class="grid2">
@@ -94,6 +98,7 @@
                 <div class="input-group"><label>Prix unitaire (€)</label><input type="number" id="prixUnitaire" value="35" step="0.01"></div>
             </div>
         </div>
+
         <div class="card">
             <h2>👷 Main d'œuvre</h2>
             <div class="grid2">
@@ -101,9 +106,11 @@
                 <div class="input-group"><label>Temps (h/m²)</label><input type="number" id="tempsMO" value="0.8" step="0.1"></div>
             </div>
         </div>
+
         <button class="btn-primary" id="btnCalculer">🔍 Calculer</button>
     </div>
 
+    <!-- VISU 2D -->
     <div id="tab-visu" class="tab-content">
         <div class="viz-header">
             <div>
@@ -120,6 +127,7 @@
         <div class="canvas-container"><canvas id="canvasCalepinage"></canvas></div>
     </div>
 
+    <!-- MÉTRÉ -->
     <div id="tab-metre" class="tab-content">
         <h2>📊 Métré</h2>
         <div class="cards-grid">
@@ -150,7 +158,7 @@
         };
     });
 
-    // PIGNON
+    // PIGNON TOGGLE
     document.querySelectorAll('input[name="surfaceType"]').forEach(function(r){
         r.onchange = function(){
             var p = this.value === 'pignon';
@@ -161,7 +169,8 @@
 
     // OUVERTURES
     document.getElementById('btnAjoutOuv').onclick = function(){
-        ouvertures.push({id:Date.now(),type:'fenetre',x:0,y:0,largeur:1200,hauteur:1500});
+        var id = Date.now();
+        ouvertures.push({id:id,type:'fenetre',x:0,y:0,largeur:1200,hauteur:1500});
         afficherOuvertures();
     };
 
@@ -251,9 +260,9 @@
         var tempsTotal = sUtile * tmo;
 
         resultats = {
-            type:type, sBrute:sBrute, sOuv:sOuv, sUtile:sUtile, sMatiere:sMatiere,
+            sBrute:sBrute, sOuv:sOuv, sUtile:sUtile, sMatiere:sMatiere,
             nbTotal:nbTotal, tauxChute:tauxChute,
-            l:l, hg:hg, l2:l2, hd:hd, lu:lu, hu:hu, joint:joint,
+            l:l, hg:hg, lu:lu, hu:hu, joint:joint,
             prixMat:prixMat, prixMO:prixMOTotal, totalHT:totalHT, totalTTC:totalTTC,
             tempsTotal:tempsTotal,
             nbVis:nbVis, nbRails:nbRails, mlDepart:mlDepart, mlFinition:mlFinition, mlEtancheite:mlEtancheite,
@@ -272,15 +281,15 @@
             '<tr><td>Surface brute</td><td>'+sBrute.toFixed(2)+' m²</td><td>-</td></tr>'+
             '<tr><td>Ouvertures</td><td>'+sOuv.toFixed(2)+' m²</td><td>-</td></tr>'+
             '<tr><td><strong>Surface utile</strong></td><td><strong>'+sUtile.toFixed(2)+' m²</strong></td><td>-</td></tr>'+
-            '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">📦 Matériau</td></tr>'+
+            '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">📦 Matériau principal</td></tr>'+
             '<tr><td>Éléments</td><td>'+nbTotal+' unités</td><td>'+prixMat.toFixed(2)+' €</td></tr>'+
             '<tr><td>Chutes</td><td>'+tauxChute.toFixed(1)+'%</td><td>-</td></tr>'+
             '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">🔩 Accessoires</td></tr>'+
-            '<tr><td>Vis</td><td>'+nbVis+' u</td><td>'+prixVis.toFixed(2)+' €</td></tr>'+
-            '<tr><td>Rails 3m</td><td>'+nbRails+' barres</td><td>'+prixRails.toFixed(2)+' €</td></tr>'+
-            '<tr><td>Profil départ</td><td>'+mlDepart.toFixed(1)+' ml</td><td>'+prixDepart.toFixed(2)+' €</td></tr>'+
-            '<tr><td>Profil finition</td><td>'+mlFinition.toFixed(1)+' ml</td><td>'+prixFinition.toFixed(2)+' €</td></tr>'+
-            '<tr><td>Étanchéité</td><td>'+mlEtancheite.toFixed(1)+' ml</td><td>'+prixEtancheite.toFixed(2)+' €</td></tr>'+
+            '<tr><td>Vis auto-perceuses</td><td>'+nbVis+' unités</td><td>'+prixVis.toFixed(2)+' €</td></tr>'+
+            '<tr><td>Rails intermédiaires 3m</td><td>'+nbRails+' barres</td><td>'+prixRails.toFixed(2)+' €</td></tr>'+
+            '<tr><td>Profil de départ</td><td>'+mlDepart.toFixed(1)+' ml</td><td>'+prixDepart.toFixed(2)+' €</td></tr>'+
+            '<tr><td>Profil de finition</td><td>'+mlFinition.toFixed(1)+' ml</td><td>'+prixFinition.toFixed(2)+' €</td></tr>'+
+            '<tr><td>Bande d\'étanchéité</td><td>'+mlEtancheite.toFixed(1)+' ml</td><td>'+prixEtancheite.toFixed(2)+' €</td></tr>'+
             '<tr><td colspan="3" style="background:#e2e8f0;font-weight:600">👷 Main d\'œuvre</td></tr>'+
             '<tr><td>Temps de pose</td><td>'+tempsTotal.toFixed(1)+' h</td><td>'+prixMOTotal.toFixed(2)+' €</td></tr>'+
             '<tr class="total-row"><td><strong>TOTAL HT</strong></td><td></td><td><strong>'+totalHT.toFixed(2)+' €</strong></td></tr>'+
@@ -297,61 +306,50 @@
     function dessiner(){
         var canvas = document.getElementById('canvasCalepinage');
         if(!canvas||!resultats)return;
-        var container = canvas.parentElement;
-        canvas.width = Math.max(container.clientWidth,300);
+        var c = canvas.parentElement;
+        canvas.width = Math.max(c.clientWidth,300);
         var ratio = resultats.hg/resultats.l;
         canvas.height = Math.min(canvas.width*ratio,500);
         var ctx = canvas.getContext('2d');
-        var w = canvas.width;
-        var h = canvas.height;
-        ctx.fillStyle='#fff';
-        ctx.fillRect(0,0,w,h);
-        var pad = 15;
-        var scale = Math.min((w-pad*2)/resultats.l, (h-pad*2)/resultats.hg);
-        var sx = pad;
-        var sy = pad;
-        var sw = resultats.l*scale;
-        var sh = resultats.hg*scale;
-
-        if(resultats.type === 'pignon'){
-            var l2 = resultats.l2;
-            var ratioHaut = l2 / resultats.l;
-            var decalageX = sw * (1 - ratioHaut) / 2;
-
-            ctx.fillStyle='#e2e8f0';
-            ctx.beginPath();
-            ctx.moveTo(sx, sy+sh);
-            ctx.lineTo(sx+sw, sy+sh);
-            ctx.lineTo(sx+sw-decalageX, sy);
-            ctx.lineTo(sx+decalageX, sy);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle='#64748b';
-            ctx.lineWidth=2;
-            ctx.stroke();
-
-            var nbR = Math.ceil(resultats.hg/(resultats.lu+resultats.joint));
-            var hR = (resultats.lu+resultats.joint)*scale;
-            for(var i=0;i<Math.min(nbR,20);i++){
-                var y = sy + i*hR;
-                var hauteurRestante = resultats.hg - i*(resultats.lu+resultats.joint);
-                var ratioY = hauteurRestante / resultats.hg;
-                var largeurY = l2 + (resultats.l - l2) * ratioY;
-                var decalY = (resultats.l - largeurY) / 2 * scale;
-                var nbP = Math.ceil(largeurY/resultats.hu);
-                var lP = resultats.hu*scale;
-                for(var j=0;j<nbP;j++){
-                    var x = sx + decalY + j*lP;
-                    var reste = largeurY - j*resultats.hu;
-                    var lr = Math.min(lP, Math.max(0, reste*scale));
-                    if(lr<=0) continue;
-                    ctx.fillStyle = reste>resultats.hu*0.9 ? '#86efac66' : (reste>0 ? '#fbbf2466' : '#fca5a566');
-                    ctx.fillRect(x, y, lr, Math.min(hR, sh-(y-sy)));
-                    ctx.strokeStyle='#64748b';
-                    ctx.lineWidth=0.5;
-                    ctx.strokeRect(x, y, lr, Math.min(hR, sh-(y-sy)));
-                }
+        var w = canvas.width, h = canvas.height;
+        ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+        var pad=15;
+        var scale=Math.min((w-pad*2)/resultats.l,(h-pad*2)/resultats.hg);
+        var sx=pad,sy=pad,sw=resultats.l*scale,sh=resultats.hg*scale;
+        ctx.fillStyle='#e2e8f0';ctx.fillRect(sx,sy,sw,sh);
+        ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.strokeRect(sx,sy,sw,sh);
+        ouvertures.forEach(function(o){
+            ctx.fillStyle='#cbd5e1';ctx.fillRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
+            ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;ctx.strokeRect(sx+o.x*scale,sy+o.y*scale,o.largeur*scale,o.hauteur*scale);
+        });
+        var nbR=Math.ceil(resultats.hg/(resultats.lu+resultats.joint));
+        var hR=(resultats.lu+resultats.joint)*scale;
+        for(var i=0;i<Math.min(nbR,20);i++){
+            var y=sy+i*hR;
+            var nbP=Math.ceil(resultats.l/resultats.hu);
+            var lP=resultats.hu*scale;
+            for(var j=0;j<nbP;j++){
+                var x=sx+j*lP;
+                var reste=resultats.l-j*resultats.hu;
+                var lr=Math.min(lP,reste*scale);
+                ctx.fillStyle=reste>resultats.hu*0.9?'#86efac66':reste>0?'#fbbf2466':'#fca5a566';
+                ctx.fillRect(x,y,lr,Math.min(hR,sh-(y-sy)));
+                ctx.strokeStyle='#64748b';ctx.lineWidth=0.5;ctx.strokeRect(x,y,lr,Math.min(hR,sh-(y-sy)));
             }
-            ctx.fillStyle='#334155';
-            ctx.font='10px sans-serif';
-            ctx.fillText(resultats.l+' mm', sx+sw/2-2
+        }
+        ctx.fillStyle='#334155';ctx.font='10px sans-serif';
+        ctx.fillText(resultats.l+' mm',sx+sw/2-20,sy+sh+12);
+    }
+
+    // PDF
+    document.getElementById('btnPDF').onclick = function(){
+        if(!resultats){alert('Faites un calcul');return;}
+        var doc = new window.jspdf.jsPDF('p','mm','a4');
+        doc.setFontSize(16);doc.setTextColor(26,86,219);doc.text('CALEPINAGE',15,20);
+        doc.setFontSize(10);doc.setTextColor(100);
+        var y=30;
+        var lignes=[
+            'Surface brute: '+resultats.sBrute.toFixed(2)+' m²',
+            'Surface utile: '+resultats.sUtile.toFixed(2)+' m²',
+            'Éléments: '+resultats.nbTotal+' unités',
+            'Chutes: '
