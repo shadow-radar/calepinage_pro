@@ -1,0 +1,20 @@
+{
+  "name": "Calepinage Pro",
+  "short_name": "Calepinage",
+  "description": "Bardage & Panneaux — Calcul et plan de pose",
+  "start_url": "/calepinage_pro/",
+  "scope": "/calepinage_pro/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
