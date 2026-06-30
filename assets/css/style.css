@@ -61,3 +61,15 @@ main {
   height: 100%;
   border: 1px solid #444;
 }
+
+.opening-item {
+  background: #222;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.opening-item input {
+  width: 80px;
+  margin-right: 5px;
+}
