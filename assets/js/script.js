@@ -436,3 +436,90 @@ function pan(e, svg, viewBox) {
 
   svg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
 }
+
+function exportPDF(indexMur) {
+  const m = murs[indexMur];
+  const svg = document.getElementById('svg_plan');
+
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(svg);
+  const img = new Image();
+  img.src = "data:image/svg+xml;base64," + btoa(svgString);
+
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2000;
+    canvas.height = 1000;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const win = window.open("", "_blank");
+
+    win.document.write(`
+      <html>
+      <head>
+        <title>Calepinage PDF - BNA</title>
+        <style>
+          body { font-family: Arial; padding: 20px; }
+          h1 { text-align: center; }
+          .section { margin-bottom: 25px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          td, th { border: 1px solid #444; padding: 6px; }
+          .logo { width: 120px; margin-bottom: 20px; }
+          img.plan { width: 100%; border: 1px solid #000; }
+        </style>
+      </head>
+      <body>
+
+        <img src="icon.svg" class="logo">
+
+        <h1>Calepinage Bardage - Mur ${indexMur + 1}</h1>
+
+        <div class="section">
+          <h2>Dimensions du mur</h2>
+          <p>Largeur : <strong>${m.largeur} mm</strong></p>
+          <p>Hauteur : <strong>${m.hauteur} mm</strong></p>
+          <p>Panneau : <strong>${m.panneau} mm</strong></p>
+          <p>Recouvrement : <strong>${m.recouvrement} mm</strong></p>
+        </div>
+
+        <div class="section">
+          <h2>Plan 2D</h2>
+          <img class="plan" src="${imgData}">
+        </div>
+
+        <div class="section">
+          <h2>Ouvertures</h2>
+          <table>
+            <tr><th>Type</th><th>X</th><th>Y</th><th>Largeur</th><th>Hauteur</th></tr>
+            ${m.ouvertures.map(o => `
+              <tr>
+                <td>${o.type}</td>
+                <td>${o.x}</td>
+                <td>${o.y}</td>
+                <td>${o.w}</td>
+                <td>${o.h}</td>
+              </tr>
+            `).join("")}
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Résumé</h2>
+          <p>Date : ${new Date().toLocaleDateString()}</p>
+          <p>Généré par BNA - Bardage Nouvelle-Aquitaine</p>
+        </div>
+
+        <script>
+          window.print();
+        </script>
+
+      </body>
+      </html>
+    `);
+
+    win.document.close();
+  };
+}
