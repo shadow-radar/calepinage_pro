@@ -2,30 +2,35 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Calepinage bardage - BNA</title>
+  <title>Calepinage Bardage - BNA</title>
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
 
   <header>
-    <h1>Calepinage bardage - Plan 2D</h1>
+    <img src="icon.svg" alt="Logo BNA" id="logo">
+    <h1>Calepinage Bardage - Plan 2D</h1>
   </header>
 
   <main>
     <section id="params">
-      <!-- Ici tu remets tes inputs (largeur, hauteur, type panneau, etc.) -->
+      <h2>Paramètres du mur</h2>
+
       <label>Largeur mur (mm)</label>
       <input type="number" id="mur_largeur" value="6000">
 
       <label>Hauteur mur (mm)</label>
       <input type="number" id="mur_hauteur" value="2800">
 
-      <button id="btn_calcul">Calculer & dessiner</button>
+      <label>Largeur panneau (mm)</label>
+      <input type="number" id="panneau_largeur" value="300">
+
+      <button id="btn_calcul">Dessiner le plan</button>
     </section>
 
     <section id="plan">
       <svg id="svg_plan" viewBox="0 0 600 300">
-        <!-- Mur, panneaux, ouvertures seront ajoutés en JS -->
         <g id="layer-mur"></g>
         <g id="layer-panneaux"></g>
         <g id="layer-ouvertures"></g>
