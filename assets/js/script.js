@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const btnExportPDF = document.getElementById('btn_export_pdf');
+
+btnExportPDF.addEventListener('click', () => {
+  exportPDF(murIndex);
+});
 
   // --- MURS / FAÇADES ---
   let murs = [];
