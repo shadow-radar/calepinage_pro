@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1B3A6B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calepinage Pro">
+  <link rel="manifest" href="manifest.json">
+  <title>Calepinage Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="dashboard">
+  <span class="dashboard-logo">🏗️ Calepinage Pro</span>
+  <div class="db-chip">
+    <span class="db-val" id="db-facades">0</span>
+    <span class="db-lbl">Façades</span>
+  </div>
+  <div class="db-chip">
+    <span class="db-val" id="db-surface">0 m²</span>
+    <span class="db-lbl">Surface</span>
+  </div>
+  <div class="db-chip">
+    <span class="db-val" id="db-lames">0</span>
+    <span class="db-lbl">Lames</span>
+  </div>
+</div>
+
+<div class="app-body">
+
+  <!-- ── ONGLETS ── -->
+  <div class="tabs">
+    <button class="tab active" data-tab="saisie">📐 Saisie</button>
+    <button class="tab" data-tab="visu">🎨 Visu 2D</button>
+    <button class="tab" data-tab="metre">📊 Métré</button>
+  </div>
+
+  <!-- ══ SAISIE ══ -->
+  <div id="tab-saisie" class="tab-content active">
+
+    <div class="add-facade-bar">
+      <button class="btn btn-primary" id="btnAddFacade">+ Façade</button>
+      <button class="btn btn-outline" id="btnCalcAll">🔍 Tout calculer</button>
+    </div>
+
+    <div id="listeFacades"></div>
+
+    <div class="projet-bar">
+      <button class="btn btn-success" id="btnSauv">💾 Sauvegarder</button>
+      <button class="btn btn-warn"    id="btnCharg">📂 Charger</button>
+      <input type="file" id="fileCharg" accept=".json" style="display:none">
+    </div>
+
+  </div>
+
+  <!-- ══ VISU 2D ══ -->
+  <div id="tab-visu" class="tab-content">
+
+    <div class="visu-toolbar">
+      <div>
+        <div class="visu-title">🎨 Plan de calepinage</div>
+        <div class="legend">
+          <span class="legend-item"><span class="leg-box" style="background:#90A4AE"></span>Entière</span>
+          <span class="legend-item"><span class="leg-box" style="background:#FFA726"></span>Découpée</span>
+          <span class="legend-item"><span class="leg-box" style="background:#EF5350"></span>Chute</span>
+          <span class="legend-item"><span class="leg-box" style="background:#94A3B8"></span>Ouverture</span>
+        </div>
+      </div>
+      <button class="btn btn-success btn-sm" id="btnImg">📸 Partager</button>
+    </div>
+
+    <div class="visu-select-wrap">
+      <label>Façade affichée</label>
+      <select id="selectVisu">
+        <option value="">— Aucune façade calculée —</option>
+      </select>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="cvs"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ══ MÉTRÉ ══ -->
+  <div id="tab-metre" class="tab-content">
+
+    <div id="totalGeneral"></div>
+
+    <button class="btn btn-primary" id="btnPartagerMetre" style="width:100%;margin-bottom:14px">
+      📤 Partager les métrés
+    </button>
+
+    <div id="tableauMetre">
+      <p class="empty">Calculez d'abord le calepinage.</p>
+    </div>
+
+  </div>
+
+</div><!-- /app-body -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Scripts (ordre important) -->
+<script src="js/state.js"></script>
+<script src="js/calcul.js"></script>
+<script src="js/dessin.js"></script>
+<script src="js/metre.js"></script>
+<script src="js/export.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
