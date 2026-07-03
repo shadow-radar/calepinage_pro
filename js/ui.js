@@ -386,6 +386,7 @@ updateDashboard();
 
 // ---- Export PDF ----
 document.getElementById('btnExportPDF').addEventListener('click', exporterPDF);
+document.getElementById('btnExportCSV').addEventListener('click', exporterCSV);
 
 // PWA
 if ('serviceWorker' in navigator) {
