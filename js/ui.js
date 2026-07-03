@@ -384,6 +384,9 @@ resFacades.push(null);
 renderFacades();
 updateDashboard();
 
+// ---- Export PDF ----
+document.getElementById('btnExportPDF').addEventListener('click', exporterPDF);
+
 // PWA
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function(){});
