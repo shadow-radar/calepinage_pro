@@ -7,7 +7,7 @@
  * - En-tête pro (logo, projet, date)
  * - Récapitulatif des surfaces / lames / temps
  * - Détail par façade (tableau)
- * - Visuel 2D de la première façade (optionnel)
+ * - Visuel 2D de la façade courante (optionnel)
  */
 function exporterPDF() {
   var calc = resFacades.filter(Boolean);
@@ -21,32 +21,81 @@ function exporterPDF() {
   var pageH = 297;
   var margin = 15;
   var y = margin;
-  var lineH = 6;
   var smallFont = 9;
   var normalFont = 11;
   var boldFont = 13;
 
-  // ---- 1. EN-TÊTE ----
+  // ============================================================
+  //  1. EN-TÊTE AVEC LOGO + INFOS PROJET
+  // ============================================================
+  
+  var logoX = margin;
+  var logoY = 6;
+  var logoW = 40;
+  var logoH = 18;
+
+  // --- Logo ---
+  try {
+    var logoImg = (typeof projet !== 'undefined' && projet.logo) 
+      ? projet.logo 
+      : 'img/logo-bna.png';
+    pdf.addImage(logoImg, 'PNG', logoX, logoY, logoW, logoH);
+  } catch(e) {
+    // Pas de logo, on continue
+  }
+
+  // --- Titre (à côté du logo) ---
+  var titleX = logoX + logoW + 5;
   pdf.setFontSize(boldFont);
   pdf.setTextColor('#1B3A6B');
-  pdf.text('🏗️ CALEPINAGE PRO — MÉTRÉ', margin, y);
-  y += 8;
+  pdf.text('🏗️ CALEPINAGE PRO — MÉTRÉ', titleX, logoY + 7);
 
-  pdf.setFontSize(normalFont);
-  pdf.setTextColor('#333333');
-  pdf.text('📅 ' + new Date().toLocaleDateString('fr-FR', {
+  // --- Infos projet (sous le titre) ---
+  pdf.setFontSize(smallFont);
+  pdf.setTextColor('#64748B');
+  var yInfo = logoY + 13;
+  
+  if (typeof projet !== 'undefined' && projet.nom) {
+    pdf.text('📋 ' + projet.nom, titleX, yInfo);
+    yInfo += 5;
+  }
+  if (typeof projet !== 'undefined' && projet.client) {
+    pdf.text('👤 ' + projet.client, titleX, yInfo);
+    yInfo += 5;
+  }
+  if (typeof projet !== 'undefined' && projet.chantier) {
+    pdf.text('📍 ' + projet.chantier, titleX, yInfo);
+    yInfo += 5;
+  }
+
+  // --- Date (tout à droite) ---
+  var dateStr = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  }), margin, y);
+  });
+  pdf.setFontSize(smallFont);
+  pdf.setTextColor('#94A3B8');
+  pdf.text('📅 ' + dateStr, pageW - margin, logoY + 7, { align: 'right' });
+
+  // --- Ligne de séparation ---
+  y = Math.max(yInfo + 4, logoY + logoH + 8);
+  pdf.setDrawColor('#E2E8F0');
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, y, pageW - margin, y);
   y += 6;
 
-  var nbFacades = calc.length;
-  pdf.text('📐 ' + nbFacades + ' façade(s) calculée(s)', margin, y);
+  // Nombre de façades
+  pdf.setFontSize(normalFont);
+  pdf.setTextColor('#333333');
+  pdf.text('📐 ' + calc.length + ' façade(s) calculée(s)', margin, y);
   y += 10;
 
-  // ---- 2. RÉCAPITULATIF GLOBAL (card) ----
+  // ============================================================
+  //  2. RÉCAPITULATIF GLOBAL
+  // ============================================================
+  
   var tot = {
     brute: 0, utile: 0, lames: 0, vis: 0,
     equerres: 0, montants: 0, ar: 0, pp: 0,
@@ -65,7 +114,7 @@ function exporterPDF() {
     tot.tMax     += r.tpsMax;
   });
 
-  // Fond gris clair pour le récap
+  // Fond gris clair
   pdf.setFillColor('#F0F4F8');
   pdf.rect(margin, y - 2, pageW - 2 * margin, 38, 'F');
   pdf.setFontSize(normalFont);
@@ -96,14 +145,17 @@ function exporterPDF() {
   });
   y += 28;
 
-  // ---- 3. DÉTAIL PAR FAÇADE (tableau) ----
+  // ============================================================
+  //  3. DÉTAIL PAR FAÇADE
+  // ============================================================
+  
   pdf.setFontSize(boldFont);
   pdf.setTextColor('#1B3A6B');
   pdf.text('📋 DÉTAIL PAR FAÇADE', margin, y);
   y += 8;
 
   calc.forEach(function(r, idx) {
-    // Vérifier si on a assez de place pour une nouvelle façade
+    // Vérifier la place
     if (y > pageH - 60) {
       pdf.addPage();
       y = margin + 10;
@@ -117,7 +169,7 @@ function exporterPDF() {
     pdf.setFont('helvetica', 'normal');
     y += 5;
 
-    // Lignes détaillées
+    // Détails
     pdf.setFontSize(smallFont);
     pdf.setTextColor('#333333');
     var details = [
@@ -142,7 +194,6 @@ function exporterPDF() {
 
     var rowH = 4.5;
     details.forEach(function(d) {
-      // Si on arrive en bas de page, on saute
       if (y > pageH - 20) {
         pdf.addPage();
         y = margin + 10;
@@ -151,7 +202,7 @@ function exporterPDF() {
       y += rowH;
     });
 
-    // Séparateur entre façades
+    // Séparateur
     y += 4;
     pdf.setDrawColor('#E2E8F0');
     pdf.setLineWidth(0.3);
@@ -159,7 +210,10 @@ function exporterPDF() {
     y += 6;
   });
 
-  // ---- 4. IMAGE DU VISU (1ère façade) ----
+  // ============================================================
+  //  4. VISU 2D (façade courante)
+  // ============================================================
+  
   var canvas = document.getElementById('cvs');
   if (canvas && resFacades[currentVisu]) {
     pdf.addPage();
@@ -175,7 +229,6 @@ function exporterPDF() {
       var imgW = pageW - 2 * margin;
       var imgH = (canvas.height / canvas.width) * imgW;
 
-      // Si l'image est trop haute, on la réduit
       if (imgH > pageH - margin * 2) {
         imgH = pageH - margin * 2;
         imgW = (canvas.width / canvas.height) * imgH;
@@ -184,7 +237,6 @@ function exporterPDF() {
       pdf.addImage(imgData, 'PNG', margin, y, imgW, imgH);
       y += imgH + 6;
 
-      // Légende
       pdf.setFontSize(smallFont);
       pdf.setTextColor('#64748B');
       pdf.text('Légende : ■ Entière  ■ Découpée  ■ Chute  ■ Ouverture', margin, y);
@@ -193,7 +245,10 @@ function exporterPDF() {
     }
   }
 
-  // ---- 5. PIED DE PAGE ----
+  // ============================================================
+  //  5. PIED DE PAGE
+  // ============================================================
+  
   var totalPages = pdf.internal.getNumberOfPages();
   for (var i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
@@ -207,7 +262,10 @@ function exporterPDF() {
     );
   }
 
-  // ---- 6. TÉLÉCHARGEMENT ----
+  // ============================================================
+  //  6. TÉLÉCHARGEMENT
+  // ============================================================
+  
   var pdfName = 'calepinage_' + new Date().toLocaleDateString('fr-FR').replace(/\//g, '-') + '.pdf';
   pdf.save(pdfName);
   showToast('📄 PDF généré !');
