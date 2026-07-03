@@ -104,31 +104,41 @@
   </div>
 
   <!-- ══ VISU 2D ══ -->
-  <div id="tab-visu" class="tab-content">
-    <div class="visu-toolbar">
-      <div>
-        <div class="visu-title">🎨 Plan de calepinage</div>
-        <div class="legend">
-          <span class="legend-item"><span class="leg-box" style="background:#90A4AE"></span>Entière</span>
-          <span class="legend-item"><span class="leg-box" style="background:#FFA726"></span>Découpée</span>
-          <span class="legend-item"><span class="leg-box" style="background:#EF5350"></span>Chute</span>
-          <span class="legend-item"><span class="leg-box" style="background:#94A3B8"></span>Ouverture</span>
-        </div>
+<div id="tab-visu" class="tab-content">
+  <div class="visu-toolbar">
+    <div>
+      <div class="visu-title">🎨 Plan de calepinage</div>
+
+      <!-- 👇 NOUVEAU : sélecteur de rendu -->
+      <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+        <span style="font-size:0.7em; color:var(--text-muted);">Rendu :</span>
+        <select id="renderStyle" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border); font-size:0.8em; background:#fff;">
+          <option value="pro">🏗️ Pro (présentation)</option>
+          <option value="technique">📐 Technique (chantier)</option>
+        </select>
       </div>
-      <button class="btn btn-success btn-sm" id="btnImg">📸 Partager</button>
-    </div>
 
-    <div class="visu-select-wrap">
-      <label>Façade affichée</label>
-      <select id="selectVisu">
-        <option value="">— Aucune façade calculée —</option>
-      </select>
+      <div class="legend">
+        <span class="legend-item"><span class="leg-box" style="background:#90A4AE"></span>Entière</span>
+        <span class="legend-item"><span class="leg-box" style="background:#FFA726"></span>Découpée</span>
+        <span class="legend-item"><span class="leg-box" style="background:#EF5350"></span>Chute</span>
+        <span class="legend-item"><span class="leg-box" style="background:#94A3B8"></span>Ouverture</span>
+      </div>
     </div>
-
-    <div class="canvas-wrap">
-      <canvas id="cvs"></canvas>
-    </div>
+    <button class="btn btn-success btn-sm" id="btnImg">📸 Partager</button>
   </div>
+
+  <div class="visu-select-wrap">
+    <label>Façade affichée</label>
+    <select id="selectVisu">
+      <option value="">— Aucune façade calculée —</option>
+    </select>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="cvs"></canvas>
+  </div>
+</div>
 
   <!-- ══ MÉTRÉ ══ -->
   <div id="tab-metre" class="tab-content">
