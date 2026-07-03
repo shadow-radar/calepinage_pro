@@ -392,3 +392,121 @@ document.getElementById('btnExportCSV').addEventListener('click', exporterCSV);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function(){});
 }
+
+// ============================================================
+//  PROJET — UI
+// ============================================================
+
+// --- Charger les infos projet dans le formulaire ---
+function chargerInfosProjet() {
+  document.getElementById('projetNom').value = projet.nom || '';
+  document.getElementById('projetClient').value = projet.client || '';
+  document.getElementById('projetChantier').value = projet.chantier || '';
+  document.getElementById('projetNumero').value = projet.numero || '';
+  document.getElementById('projetNotes').value = projet.notes || '';
+}
+
+// --- Sauvegarder les infos projet ---
+document.getElementById('btnProjetSauv').addEventListener('click', function() {
+  projet.nom = document.getElementById('projetNom').value;
+  projet.client = document.getElementById('projetClient').value;
+  projet.chantier = document.getElementById('projetChantier').value;
+  projet.numero = document.getElementById('projetNumero').value;
+  projet.notes = document.getElementById('projetNotes').value;
+  
+  localStorage.setItem('calepinage_projet', JSON.stringify(projet));
+  showToast('✅ Infos projet enregistrées');
+  
+  // Met à jour le dashboard
+  var logo = document.querySelector('.dashboard-logo');
+  if (logo) {
+    var nomProj = projet.nom ? ' — ' + projet.nom : '';
+    logo.textContent = '🏗️ Calepinage Pro' + nomProj;
+  }
+});
+
+// --- Sauvegarder une version ---
+document.getElementById('btnSauvVersion').addEventListener('click', function() {
+  var nom = prompt('Nom de la version (ex: v1, version client, etc.) :', 'v' + new Date().toISOString().slice(0,10));
+  if (nom !== null) {
+    sauvegarderVersion(nom || undefined);
+    mettreAJourListeVersions();
+  }
+});
+
+// --- Charger une version ---
+document.getElementById('btnChargerVersion').addEventListener('click', function() {
+  var sel = document.getElementById('selectVersions');
+  if (sel.value) {
+    chargerVersion(sel.value);
+    chargerInfosProjet();
+    mettreAJourListeVersions();
+  } else {
+    showToast('⚠️ Sélectionnez une version');
+  }
+});
+
+// --- Supprimer une version ---
+document.getElementById('btnSupprVersion').addEventListener('click', function() {
+  var sel = document.getElementById('selectVersions');
+  if (sel.value && confirm('Supprimer définitivement cette version ?')) {
+    supprimerVersion(sel.value);
+    mettreAJourListeVersions();
+  }
+});
+
+// --- Mettre à jour la liste des versions ---
+function mettreAJourListeVersions() {
+  var sel = document.getElementById('selectVersions');
+  var current = sel.value;
+  sel.innerHTML = '';
+  
+  var list = listerVersions();
+  if (list.length === 0) {
+    sel.innerHTML = '<option value="">— Aucune version —</option>';
+    return;
+  }
+  
+  list.forEach(function(item) {
+    var opt = document.createElement('option');
+    opt.value = item.key;
+    opt.textContent = item.version + ' (' + item.date + ')';
+    if (item.key === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// --- Dashboard avec nom projet ---
+function mettreAJourDashboardProjet() {
+  var logo = document.querySelector('.dashboard-logo');
+  if (logo) {
+    var nomProj = projet.nom ? ' — ' + projet.nom : '';
+    logo.textContent = '🏗️ Calepinage Pro' + nomProj;
+  }
+}
+
+// --- INIT PROJET ---
+// Charger les infos projet depuis localStorage
+var projetSauv = localStorage.getItem('calepinage_projet');
+if (projetSauv) {
+  try {
+    var p = JSON.parse(projetSauv);
+    projet.nom = p.nom || projet.nom;
+    projet.client = p.client || projet.client;
+    projet.chantier = p.chantier || projet.chantier;
+    projet.numero = p.numero || projet.numero;
+    projet.notes = p.notes || projet.notes;
+  } catch(e) {}
+}
+
+// Initialiser le dashboard
+mettreAJourDashboardProjet();
+
+// Charger les infos dans le formulaire (si le DOM est prêt)
+document.addEventListener('DOMContentLoaded', function() {
+  chargerInfosProjet();
+  mettreAJourListeVersions();
+});
+
+// ---- Dans l'init existant, après le chargement de la dernière session ----
+// chargerDernierProjet(); // si tu veux charger automatiquement
