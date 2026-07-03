@@ -19,6 +19,12 @@ function updateDashboard() {
   document.getElementById('db-surface').textContent  = totS.toFixed(1) + ' m²';
   document.getElementById('db-lames').textContent    = totL;
 }
+function mettreAJourDashboardProjet() {
+  var el = document.getElementById('dashboardProjet');
+  if (el) {
+    el.textContent = projet.nom ? '— ' + projet.nom : '';
+  }
+}
 
 // --- Onglets ---
 document.querySelectorAll('.tab').forEach(function(t) {
