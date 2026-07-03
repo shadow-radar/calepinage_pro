@@ -45,6 +45,47 @@
     <button class="tab" data-tab="metre">📊 Métré</button>
   </div>
 
+  <!-- ══ PROJET ══ -->
+<div class="card" style="margin-bottom:12px;">
+  <div class="card-title">📋 Informations projet</div>
+  <div class="grid2">
+    <div class="field">
+      <label>Nom du projet</label>
+      <input type="text" id="projetNom" value="" placeholder="Chantier Mairie">
+    </div>
+    <div class="field">
+      <label>Client</label>
+      <input type="text" id="projetClient" value="" placeholder="Mairie de Lyon">
+    </div>
+    <div class="field">
+      <label>Chantier / adresse</label>
+      <input type="text" id="projetChantier" value="" placeholder="12 rue de la République">
+    </div>
+    <div class="field">
+      <label>N° de dossier</label>
+      <input type="text" id="projetNumero" value="" placeholder="BNA-2026-001">
+    </div>
+  </div>
+  <div class="field" style="margin-top:8px;">
+    <label>Notes</label>
+    <input type="text" id="projetNotes" value="" placeholder="Livraison prévue en juillet">
+  </div>
+  <button class="btn btn-primary btn-sm" id="btnProjetSauv" style="margin-top:8px;">💾 Enregistrer les infos</button>
+</div>
+
+<!-- ══ GESTION VERSIONS ══ -->
+<div class="card" style="margin-bottom:12px;">
+  <div class="card-title">📂 Versions sauvegardées</div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="btn btn-success btn-sm" id="btnSauvVersion">💾 Sauvegarder cette version</button>
+    <select id="selectVersions" style="flex:1; padding:8px; border:2px solid var(--border); border-radius:8px;">
+      <option value="">— Aucune version —</option>
+    </select>
+    <button class="btn btn-primary btn-sm" id="btnChargerVersion">📂 Charger</button>
+    <button class="btn btn-danger btn-sm" id="btnSupprVersion">🗑️</button>
+  </div>
+</div>
+  
   <!-- ══ SAISIE ══ -->
   <div id="tab-saisie" class="tab-content active">
     <div class="add-facade-bar">
