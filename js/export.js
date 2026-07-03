@@ -85,3 +85,41 @@ function partagerImage() {
     showToast('📸 Image téléchargée !');
   }, 'image/png');
 }
+
+// ============================================================
+//  EXPORT CSV
+// ============================================================
+
+function exporterCSV() {
+  var calc = resFacades.filter(Boolean);
+  if (calc.length === 0) {
+    showToast('⚠️ Calculez d\'abord les façades');
+    return;
+  }
+
+  var lignes = ['Façade;Surface brute;Surface utile;Lames;Vis;Montants;Équerres;Durée (h)'];
+  calc.forEach(function(r) {
+    lignes.push([
+      r.nom,
+      r.sBrute.toFixed(2).replace('.', ','),
+      r.sUtile.toFixed(2).replace('.', ','),
+      r.nbTotal,
+      r.nbVis,
+      r.nbMontants3m,
+      r.nbEquerres,
+      r.tpsMin.toFixed(1) + '-' + r.tpsMax.toFixed(1)
+    ].join(';'));
+  });
+
+  var blob = new Blob(['\uFEFF' + lignes.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'metres_' + new Date().toLocaleDateString('fr-FR').replace(/\//g, '-') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('📊 CSV exporté !');
+}
