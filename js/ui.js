@@ -71,6 +71,13 @@ document.getElementById('selectVisu').addEventListener('change', function() {
   }
 });
 
+// --- Sélecteur de rendu ---
+document.getElementById('renderStyle').addEventListener('change', function() {
+  if (resFacades[currentVisu]) {
+    dessiner(resFacades[currentVisu]);
+  }
+});
+
 // --- Rendu liste des façades ---
 function renderFacades() {
   var c = document.getElementById('listeFacades');
