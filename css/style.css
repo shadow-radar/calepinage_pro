@@ -34,11 +34,13 @@ body {
   min-height:  100vh;
 }
 
-/* ── DASHBOARD (barre statut en haut) ── */
+/* ════════════════════════════════════════════════════════════
+   DASHBOARD (barre statut en haut) 
+   ════════════════════════════════════════════════════════════ */
 .dashboard {
   background:    linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
   color:         #fff;
-  padding:       12px 16px;
+  padding:       10px 16px;
   display:       flex;
   gap:           8px;
   align-items:   center;
@@ -46,21 +48,45 @@ body {
   top:           0;
   z-index:       100;
   box-shadow:    var(--shadow-md);
+  min-height:    56px;
 }
+
+/* --- Logo dans le dashboard --- */
+.dashboard-logo-img {
+  height:         32px;
+  width:          auto;
+  object-fit:     contain;
+  margin-right:   8px;
+  flex-shrink:    0;
+}
+
 .dashboard-logo {
   font-size:     1.05em;
   font-weight:   700;
-  letter-spacing:.5px;
-  margin-right:  auto;
+  letter-spacing: 0.5px;
+  white-space:    nowrap;
 }
+
+.dashboard-projet {
+  font-size:     0.7em;
+  opacity:       0.8;
+  margin-left:   6px;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  max-width:     160px;
+}
+
+/* --- Chips stats --- */
 .db-chip {
   display:       flex;
-  flex-direction:column;
+  flex-direction: column;
   align-items:   center;
   background:    rgba(255,255,255,.15);
   border-radius: 8px;
   padding:       5px 10px;
   min-width:     54px;
+  flex-shrink:   0;
 }
 .db-val {
   font-size:     1em;
@@ -73,10 +99,14 @@ body {
   margin-top:    2px;
 }
 
-/* ── CONTENU ── */
+/* ════════════════════════════════════════════════════════════
+   CONTENU 
+   ════════════════════════════════════════════════════════════ */
 .app-body { padding: 12px 12px 80px; max-width: 620px; margin: 0 auto; }
 
-/* ── ONGLETS ── */
+/* ════════════════════════════════════════════════════════════
+   ONGLETS 
+   ════════════════════════════════════════════════════════════ */
 .tabs {
   display:       flex;
   gap:           4px;
@@ -104,7 +134,9 @@ body {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ── CARDS ── */
+/* ════════════════════════════════════════════════════════════
+   CARDS 
+   ════════════════════════════════════════════════════════════ */
 .card {
   background:    var(--surface);
   border-radius: var(--radius);
@@ -113,30 +145,32 @@ body {
   box-shadow:    var(--shadow-sm);
 }
 .card-title {
-  font-size:   .95em;
-  font-weight: 700;
-  color:       var(--blue-dark);
+  font-size:     .95em;
+  font-weight:   700;
+  color:         var(--blue-dark);
   margin-bottom: 12px;
 }
 
-/* ── FIELDS ── */
+/* ════════════════════════════════════════════════════════════
+   FIELDS 
+   ════════════════════════════════════════════════════════════ */
 .section-label {
   display:       block;
   font-size:     .72em;
   font-weight:   700;
   color:         var(--text-muted);
-  letter-spacing:.6px;
+  letter-spacing: 0.6px;
   margin-bottom: 8px;
 }
 .field {
   display:       flex;
-  flex-direction:column;
+  flex-direction: column;
   gap:           4px;
 }
 .field label {
-  font-size:   .76em;
-  color:       var(--text-muted);
-  font-weight: 500;
+  font-size:     .76em;
+  color:         var(--text-muted);
+  font-weight:   500;
 }
 .field input, .field select {
   padding:       10px 11px;
@@ -155,7 +189,9 @@ body {
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .field-group { margin-bottom: 4px; }
 
-/* ── RADIO ── */
+/* ════════════════════════════════════════════════════════════
+   RADIO 
+   ════════════════════════════════════════════════════════════ */
 .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
 .radio-label {
   display:       flex;
@@ -176,7 +212,9 @@ body {
   font-weight:   700;
 }
 
-/* ── BOUTONS ── */
+/* ════════════════════════════════════════════════════════════
+   BOUTONS 
+   ════════════════════════════════════════════════════════════ */
 .btn {
   padding:       11px 18px;
   border:        none;
@@ -205,7 +243,9 @@ body {
 .btn-danger:hover { background: #FECACA; }
 .btn-sm      { padding: 6px 11px; font-size: .8em; border-radius: 6px; }
 
-/* ── FAÇADES ── */
+/* ════════════════════════════════════════════════════════════
+   FAÇADES 
+   ════════════════════════════════════════════════════════════ */
 .add-facade-bar { display: flex; gap: 8px; margin-bottom: 12px; }
 .projet-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
@@ -232,19 +272,21 @@ body {
 .facade-title  { font-weight: 700; font-size: .92em; flex: 1; }
 .chevron       { color: var(--text-muted); font-size: .9em; }
 .badge {
-  font-size:   .72em;
-  padding:     3px 9px;
+  font-size:     .72em;
+  padding:       3px 9px;
   border-radius: 20px;
-  background:  var(--border);
-  color:       var(--text-muted);
-  font-weight: 600;
+  background:    var(--border);
+  color:         var(--text-muted);
+  font-weight:   600;
 }
 .badge.ok { background: #DCFCE7; color: var(--green); }
 .facade-body { display: none; padding: 14px 16px; border-top: 1px solid var(--border); }
 .facade-body.open { display: block; }
 .facade-actions { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
 
-/* ── OUVERTURES ── */
+/* ════════════════════════════════════════════════════════════
+   OUVERTURES 
+   ════════════════════════════════════════════════════════════ */
 .ouv-item {
   display:       flex;
   align-items:   center;
@@ -266,7 +308,9 @@ body {
 .ouv-item input { width: 68px; }
 .ouv-lbl { font-size: .72em; color: var(--text-muted); font-weight: 600; }
 
-/* ── VISU ── */
+/* ════════════════════════════════════════════════════════════
+   VISU 
+   ════════════════════════════════════════════════════════════ */
 .visu-toolbar {
   display:       flex;
   justify-content: space-between;
@@ -299,7 +343,9 @@ canvas { display: block; max-width: 100%; }
   font-family:   inherit;
 }
 
-/* ── MÉTRÉS ── */
+/* ════════════════════════════════════════════════════════════
+   MÉTRÉS 
+   ════════════════════════════════════════════════════════════ */
 .total-card {
   background:    linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
   color:         #fff;
@@ -321,7 +367,9 @@ tr:hover td { background: var(--blue-light); }
 .sep-row td  { background: #E2E8F0; font-weight: 700; font-size: .76em; color: var(--text-muted); padding: 5px 11px; letter-spacing: .4px; }
 .total-row td { font-weight: 700; background: var(--blue-light); border-top: 2px solid var(--blue); }
 
-/* ── TOAST ── */
+/* ════════════════════════════════════════════════════════════
+   TOAST 
+   ════════════════════════════════════════════════════════════ */
 .toast {
   position:    fixed;
   bottom:      24px;
@@ -341,12 +389,18 @@ tr:hover td { background: var(--blue-light); }
 }
 .toast.show { opacity: 1; }
 
-/* ── MISC ── */
+/* ════════════════════════════════════════════════════════════
+   MISC 
+   ════════════════════════════════════════════════════════════ */
 .empty { color: var(--text-muted); font-size: .85em; font-style: italic; padding: 4px 0; }
 
-/* ── RESPONSIVE ── */
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE 
+   ════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .grid2 { grid-template-columns: 1fr; }
   .total-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-logo { font-size: .9em; }
+  .dashboard-projet { max-width: 80px; font-size: 0.6em; }
+  .dashboard-logo-img { height: 26px; }
 }
