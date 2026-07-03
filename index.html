@@ -14,10 +14,11 @@
 </head>
 <body>
 
+<!-- Librairies pour PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- ══ DASHBOARD ══ -->
+<!-- ══ DASHBOARD ══ -->
 <div class="dashboard">
   <span class="dashboard-logo">🏗️ Calepinage Pro</span>
   <div class="db-chip">
@@ -45,7 +46,6 @@
 
   <!-- ══ SAISIE ══ -->
   <div id="tab-saisie" class="tab-content active">
-
     <div class="add-facade-bar">
       <button class="btn btn-primary" id="btnAddFacade">+ Façade</button>
       <button class="btn btn-outline" id="btnCalcAll">🔍 Tout calculer</button>
@@ -58,12 +58,10 @@
       <button class="btn btn-warn"    id="btnCharg">📂 Charger</button>
       <input type="file" id="fileCharg" accept=".json" style="display:none">
     </div>
-
   </div>
 
   <!-- ══ VISU 2D ══ -->
   <div id="tab-visu" class="tab-content">
-
     <div class="visu-toolbar">
       <div>
         <div class="visu-title">🎨 Plan de calepinage</div>
@@ -87,7 +85,6 @@
     <div class="canvas-wrap">
       <canvas id="cvs"></canvas>
     </div>
-
   </div>
 
   <!-- ══ MÉTRÉ ══ -->
@@ -95,40 +92,14 @@
 
     <div id="totalGeneral"></div>
 
-    function exporterCSV() {
-  var calc = resFacades.filter(Boolean);
-  if (calc.length === 0) { showToast('⚠️ Calculez d\'abord'); return; }
-
-  var lignes = ['Façade;Surface brute;Surface utile;Lames;Vis;Montants;Équerres;Durée (h)'];
-  calc.forEach(function(r) {
-    lignes.push([
-      r.nom,
-      r.sBrute.toFixed(2),
-      r.sUtile.toFixed(2),
-      r.nbTotal,
-      r.nbVis,
-      r.nbMontants3m,
-      r.nbEquerres,
-      r.tpsMin.toFixed(1) + '-' + r.tpsMax.toFixed(1)
-    ].join(';'));
-  });
-
-  var blob = new Blob([lignes.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'metres_' + new Date().toLocaleDateString('fr-FR') + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
+    <!-- 👇 ICI : les 2 boutons côte à côte -->
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <button class="btn btn-primary" id="btnExportPDF" style="flex:1;">📄 PDF</button>
+      <button class="btn btn-success" id="btnExportCSV" style="flex:1;">📊 CSV</button>
+    </div>
 
     <button class="btn btn-primary" id="btnPartagerMetre" style="width:100%;margin-bottom:14px">
       📤 Partager les métrés
-    </button>
-
-    <!-- Dans index.html, onglet metre -->
-    <button class="btn btn-primary" id="btnExportPDF" style="width:100%;margin-bottom:14px">
-    📄 Exporter en PDF
     </button>
 
     <div id="tableauMetre">
@@ -146,7 +117,7 @@
 <script src="js/calcul.js"></script>
 <script src="js/dessin.js"></script>
 <script src="js/metre.js"></script>
-<script src="js/export.js"></script> 
+<script src="js/export.js"></script>
 <script src="js/exportPDF.js"></script>
 <script src="js/ui.js"></script>
 
