@@ -231,7 +231,7 @@ function bindFacadeForm(f, idx) {
 
   // Radio type
   body.querySelectorAll('input[type="radio"]').forEach(function(r) {
-    r.addEventListener('change', function() {
+    r.addEventListener('click', function() {
       var fac = facades[idx];
       if (!fac) return;
       fac.type = this.value;
