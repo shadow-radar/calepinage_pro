@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1B3A6B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calepinage Pro">
+  <link rel="manifest" href="manifest.json">
+  <title>Calepinage Pro</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Librairies pour PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="dashboard">
+  <img src="img/logo-bna.png" alt="BNA Bardage" class="dashboard-logo-img">
+  <span class="dashboard-logo">🏗️ Calepinage Pro</span>
+  <span class="dashboard-projet" id="dashboardProjet"></span>
+  <div class="db-chip">
+    <span class="db-val" id="db-facades">0</span>
+    <span class="db-lbl">Façades</span>
+  </div>
+  <div class="db-chip">
+    <span class="db-val" id="db-surface">0 m²</span>
+    <span class="db-lbl">Surface</span>
+  </div>
+  <div class="db-chip">
+    <span class="db-val" id="db-lames">0</span>
+    <span class="db-lbl">Lames</span>
+  </div>
+</div>
+
+<div class="app-body">
+
+  <!-- ── ONGLETS ── -->
+  <div class="tabs">
+    <button class="tab active" data-tab="saisie">📐 Saisie</button>
+    <button class="tab" data-tab="visu">🎨 Visu 2D</button>
+    <button class="tab" data-tab="metre">📊 Métré</button>
+  </div>
+
+  <!-- ══ SAISIE ══ -->
+  <div id="tab-saisie" class="tab-content active">
+
+    <!-- Informations projet -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">📋 Informations projet</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Nom du projet</label>
+          <input type="text" id="projetNom" value="" placeholder="Chantier Mairie">
+        </div>
+        <div class="field">
+          <label>Client</label>
+          <input type="text" id="projetClient" value="" placeholder="Mairie de Lyon">
+        </div>
+        <div class="field">
+          <label>Chantier / adresse</label>
+          <input type="text" id="projetChantier" value="" placeholder="12 rue de la République">
+        </div>
+        <div class="field">
+          <label>N° de dossier</label>
+          <input type="text" id="projetNumero" value="" placeholder="BNA-2026-001">
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label>Notes</label>
+        <input type="text" id="projetNotes" value="" placeholder="Livraison prévue en juillet">
+      </div>
+      <button class="btn btn-primary btn-sm" id="btnProjetSauv" style="margin-top:8px;">💾 Enregistrer les infos</button>
+    </div>
+
+    <!-- Versions sauvegardées -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">📂 Versions sauvegardées</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+        <button class="btn btn-success btn-sm" id="btnSauvVersion">💾 Sauvegarder version locale</button>
+        <select id="selectVersions" style="flex:1; padding:8px; border:2px solid var(--border); border-radius:8px;">
+          <option value="">— Aucune version —</option>
+        </select>
+        <button class="btn btn-primary btn-sm" id="btnChargerVersion">📂 Charger</button>
+        <button class="btn btn-danger btn-sm" id="btnSupprVersion">🗑️</button>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" id="btnSauvCloud">☁️ Sauvegarder Firebase</button>
+        <button class="btn btn-outline btn-sm" id="btnListeChantiers">📋 Mes chantiers</button>
+      </div>
+      <div id="listeChantiers" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Façades -->
+    <div class="add-facade-bar">
+      <button class="btn btn-primary" id="btnAddFacade">+ Façade</button>
+      <button class="btn btn-outline" id="btnCalcAll">🔍 Tout calculer</button>
+    </div>
+
+    <div id="listeFacades"></div>
+
+    <div class="projet-bar">
+      <button class="btn btn-success" id="btnSauv">💾 Sauvegarder</button>
+      <button class="btn btn-warn"    id="btnCharg">📂 Charger</button>
+      <input type="file" id="fileCharg" accept=".json" style="display:none">
+    </div>
+
+  </div>
+
+  <!-- ══ VISU 2D ══ -->
+  <div id="tab-visu" class="tab-content">
+    <div class="visu-toolbar">
+      <div>
+        <div class="visu-title">🎨 Plan de calepinage</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+          <span style="font-size:0.7em; color:var(--text-muted);">Rendu :</span>
+          <select id="renderStyle" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border); font-size:0.8em; background:#fff;">
+            <option value="pro">🏗️ Pro (présentation)</option>
+            <option value="technique">📐 Technique (chantier)</option>
+          </select>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="leg-box" style="background:#90A4AE"></span>Entière</span>
+          <span class="legend-item"><span class="leg-box" style="background:#FFA726"></span>Découpée</span>
+          <span class="legend-item"><span class="leg-box" style="background:#EF5350"></span>Chute</span>
+          <span class="legend-item"><span class="leg-box" style="background:#94A3B8"></span>Ouverture</span>
+        </div>
+      </div>
+      <button class="btn btn-success btn-sm" id="btnImg">📸 Partager</button>
+    </div>
+
+    <div class="visu-select-wrap">
+      <label>Façade affichée</label>
+      <select id="selectVisu">
+        <option value="">— Aucune façade calculée —</option>
+      </select>
+    </div>
+
+    <div class="canvas-wrap">
+      <button onclick="try { dessiner(resFacades[currentVisu]); } catch(e) { alert('ERREUR: ' + e.message); }" class="btn btn-primary" style="width:100%;margin-bottom:8px">🔄 Redessiner</button>
+      <canvas id="cvs"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ MÉTRÉ ══ -->
+  <div id="tab-metre" class="tab-content">
+    <div id="totalGeneral"></div>
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <button class="btn btn-primary" id="btnExportPDF" style="flex:1;">📄 PDF</button>
+      <button class="btn btn-success" id="btnExportCSV" style="flex:1;">📊 CSV</button>
+    </div>
+    <button class="btn btn-primary" id="btnPartagerMetre" style="width:100%;margin-bottom:14px">
+      📤 Partager les métrés
+    </button>
+    <div id="tableauMetre">
+      <p class="empty">Calculez d'abord le calepinage.</p>
+    </div>
+  </div>
+
+</div><!-- /app-body -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase en premier -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+<script src="js/firebase.js"></script>
+
+<!-- Scripts (ordre important) -->
+<script src="js/state.js"></script>
+<script src="js/calcul.js"></script>
+<script src="js/dessin.js"></script>
+<script src="js/metre.js"></script>
+<script src="js/export.js"></script>
+<script src="js/exportPDF.js"></script>
+<script src="js/api.js"></script>
+<script src="js/projet.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
