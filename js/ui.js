@@ -5,20 +5,25 @@
 // --- Toast ---
 function showToast(msg) {
   var t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 2800);
 }
 
-// --- Dashboard (barre de statut) ---
+// --- Dashboard ---
 function updateDashboard() {
   var calc  = resFacades.filter(Boolean);
   var totS  = calc.reduce(function(a, r){ return a + r.sBrute; }, 0);
   var totL  = calc.reduce(function(a, r){ return a + r.nbTotal; }, 0);
-  document.getElementById('db-facades').textContent  = facades.length;
-  document.getElementById('db-surface').textContent  = totS.toFixed(1) + ' m²';
-  document.getElementById('db-lames').textContent    = totL;
+  var elF = document.getElementById('db-facades');
+  var elS = document.getElementById('db-surface');
+  var elL = document.getElementById('db-lames');
+  if (elF) elF.textContent = facades.length;
+  if (elS) elS.textContent = totS.toFixed(1) + ' m²';
+  if (elL) elL.textContent = totL;
 }
+
 function mettreAJourDashboardProjet() {
   var el = document.getElementById('dashboardProjet');
   if (el) {
@@ -27,25 +32,32 @@ function mettreAJourDashboardProjet() {
 }
 
 // --- Onglets ---
-document.querySelectorAll('.tab').forEach(function(t) {
-  t.addEventListener('click', function() {
-    var id = this.dataset.tab;
-    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
-    document.querySelectorAll('.tab-content').forEach(function(x){ x.classList.remove('active'); });
-    this.classList.add('active');
-    document.getElementById('tab-' + id).classList.add('active');
-    if (id === 'visu') {
-      updateSelectVisu();
-      if (resFacades[currentVisu]) {
-        setTimeout(function() { dessiner(resFacades[currentVisu]); }, 150);
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.addEventListener('click', function() {
+      var id = this.dataset.tab;
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(x){ x.classList.remove('active'); });
+      this.classList.add('active');
+      var pane = document.getElementById('tab-' + id);
+      if (pane) pane.classList.add('active');
+      
+      if (id === 'visu') {
+        updateSelectVisu();
+        if (resFacades[currentVisu]) {
+          setTimeout(function() { dessiner(resFacades[currentVisu]); }, 150);
+        }
+      } else if (id === 'planning') {
+        afficherPlanning();
       }
-    }
+    });
   });
-});
+}
 
 // --- Sélecteur visu ---
 function updateSelectVisu() {
   var sel  = document.getElementById('selectVisu');
+  if (!sel) return;
   var prev = parseInt(sel.value);
   sel.innerHTML = '';
   var hasOne = false;
@@ -65,29 +77,41 @@ function updateSelectVisu() {
   sel.value = (!isNaN(prev) && resFacades[prev]) ? prev : currentVisu;
 }
 
-document.getElementById('selectVisu').addEventListener('change', function() {
-  var i = parseInt(this.value);
-  if (!isNaN(i) && resFacades[i]) {
-    currentVisu = i;
-    dessiner(resFacades[i]);
+function initSelectVisu() {
+  var sel = document.getElementById('selectVisu');
+  if (sel) {
+    sel.addEventListener('change', function() {
+      var i = parseInt(this.value);
+      if (!isNaN(i) && resFacades[i]) {
+        currentVisu = i;
+        dessiner(resFacades[i]);
+      }
+    });
   }
-});
+}
 
-// --- Sélecteur de rendu ---
-document.getElementById('renderStyle').addEventListener('change', function() {
-  if (resFacades[currentVisu]) {
-    dessiner(resFacades[currentVisu]);
+function initRenderStyle() {
+  var rs = document.getElementById('renderStyle');
+  if (rs) {
+    rs.addEventListener('change', function() {
+      if (resFacades[currentVisu]) {
+        dessiner(resFacades[currentVisu]);
+      }
+    });
   }
-});
+}
 
 // --- Rendu liste des façades ---
 function renderFacades() {
   var c = document.getElementById('listeFacades');
+  if (!c) return;
+  
   if (facades.length === 0) {
     c.innerHTML = '<p class="empty" style="padding:20px 0">Aucune façade — cliquez "+ Façade"</p>';
     updateDashboard();
     return;
   }
+  
   c.innerHTML = '';
   facades.forEach(function(f, idx) {
     var r     = resFacades[idx];
@@ -110,7 +134,8 @@ function renderFacades() {
 
   // Accordion
   c.querySelectorAll('.facade-header').forEach(function(h) {
-    h.addEventListener('click', function() {
+    h.addEventListener('click', function(e) {
+      if (e.target.closest('button')) return; // Ignorer les clics sur boutons
       var i    = parseInt(this.dataset.idx);
       var body = document.getElementById('fb_' + i);
       var open = body.classList.contains('open');
@@ -129,7 +154,31 @@ function renderFacades() {
 
 // --- HTML formulaire façade ---
 function renderFacadeForm(f, idx) {
+  var validation = validerFacade(f);
+  var validationHtml = '';
+  if (!validation.valid || validation.warnings.length > 0) {
+    validationHtml = '<div id="val_' + idx + '" style="margin-bottom:10px;">';
+    if (!validation.valid) {
+      validationHtml += '<div class="validation-errors">';
+      validationHtml += '<div class="validation-title">❌ Erreurs</div>';
+      validation.errors.forEach(function(err) {
+        validationHtml += '<div class="validation-item">• ' + err + '</div>';
+      });
+      validationHtml += '</div>';
+    }
+    if (validation.warnings.length > 0) {
+      validationHtml += '<div class="validation-warnings">';
+      validationHtml += '<div class="validation-title">⚠️ Avertissements</div>';
+      validation.warnings.forEach(function(warn) {
+        validationHtml += '<div class="validation-item">• ' + warn + '</div>';
+      });
+      validationHtml += '</div>';
+    }
+    validationHtml += '</div>';
+  }
+
   return (
+    validationHtml +
     // Nom
     '<div class="field"><label>Nom</label>' +
     '<input type="text" data-fid="' + f.id + '" data-ff="nom" value="' + (f.nom||'') + '" placeholder="Façade Nord, Pignon Est…"></div>' +
@@ -183,6 +232,12 @@ function renderFacadeForm(f, idx) {
     '<option value="gauche"'+(f.coteVent==='gauche'?' selected':'')+'>Vent G → G→D</option>' +
     '<option value="droite"'+(f.coteVent==='droite'?' selected':'')+'>Vent D → D→G</option>' +
     '</select></div>' +
+    '</div></div>' +
+
+    // Débord de toit (nouveau)
+    '<div class="field-group" style="margin-top:10px"><label class="section-label">DÉBORD DE TOIT</label>' +
+    '<div class="grid2">' +
+    '<div class="field"><label>Débord (mm)</label><input type="number" data-fid="'+f.id+'" data-ff="debordToit" value="'+(f.debordToit||0)+'" min="0"></div>' +
     '</div></div>' +
 
     // Ouvertures
@@ -241,6 +296,26 @@ function bindFacadeForm(f, idx) {
         var cv = document.getElementById('fCV_' + idx);
         if (cv) cv.style.display = this.value === 'metal' ? 'flex' : 'none';
       }
+      // Re-valider en temps réel
+      var valDiv = document.getElementById('val_' + idx);
+      if (valDiv) {
+        var v = validerFacade(fac);
+        var html = '';
+        if (!v.valid) {
+          html += '<div class="validation-errors">';
+          html += '<div class="validation-title">❌ Erreurs</div>';
+          v.errors.forEach(function(err) { html += '<div class="validation-item">• ' + err + '</div>'; });
+          html += '</div>';
+        }
+        if (v.warnings.length > 0) {
+          html += '<div class="validation-warnings">';
+          html += '<div class="validation-title">⚠️ Avertissements</div>';
+          v.warnings.forEach(function(w) { html += '<div class="validation-item">• ' + w + '</div>'; });
+          html += '</div>';
+        }
+        valDiv.innerHTML = html;
+        valDiv.style.display = html ? 'block' : 'none';
+      }
     });
   });
 
@@ -275,6 +350,11 @@ function bindFacadeForm(f, idx) {
   if (btnCalc) {
     btnCalc.addEventListener('click', function() {
       var i = parseInt(this.dataset.calc);
+      var validation = validerFacade(facades[i]);
+      if (!validation.valid) {
+        showToast('❌ ' + validation.errors[0]);
+        return;
+      }
       resFacades[i] = calculerFacade(facades[i]);
       currentVisu   = i;
       renderFacades();
@@ -302,6 +382,7 @@ function bindFacadeForm(f, idx) {
   if (btnDel) {
     btnDel.addEventListener('click', function() {
       var i = parseInt(this.dataset.del);
+      if (!confirm('Supprimer ' + nomFacade(facades[i]) + ' ?')) return;
       facades.splice(i, 1);
       resFacades.splice(i, 1);
       renderFacades();
@@ -315,7 +396,7 @@ function bindFacadeForm(f, idx) {
   if (btnDup) {
     btnDup.addEventListener('click', function() {
       var i    = parseInt(this.dataset.dup);
-      var copy = JSON.parse(JSON.stringify(facades[i]));
+      var copy = deepClone(facades[i]);
       facadeCounter++;
       copy.id  = Date.now();
       copy.num = facadeCounter;
@@ -361,167 +442,165 @@ function _switchTab(id) {
   if (pane) pane.classList.add('active');
 }
 
-// --- Boutons globaux ---
-document.getElementById('btnAddFacade').addEventListener('click', function() {
-  facades.push(newFacade());
-  resFacades.push(null);
-  renderFacades();
-  var last = facades.length - 1;
-  var body = document.getElementById('fb_' + last);
-  if (body) body.classList.add('open');
-});
-
-document.getElementById('btnCalcAll').addEventListener('click', function() {
-  if (facades.length === 0) { showToast('⚠️ Ajoutez d\'abord des façades'); return; }
-  facades.forEach(function(f, i) { resFacades[i] = calculerFacade(f); });
-  currentVisu = 0;
-  renderFacades();
-  afficherMetreTotal();
-  updateSelectVisu();
-  _switchTab('metre');
-  showToast('✓ ' + facades.length + ' façade(s) calculée(s)');
-});
-
-document.getElementById('btnSauv').addEventListener('click', sauvegarderProjet);
-document.getElementById('btnCharg').addEventListener('click', function() {
-  document.getElementById('fileCharg').click();
-});
-document.getElementById('fileCharg').addEventListener('change', function(e) {
-  chargerProjet(e.target.files[0]);
-  this.value = '';
-});
-document.getElementById('btnImg').addEventListener('click', partagerImage);
-document.getElementById('btnPartagerMetre').addEventListener('click', partagerMetres);
-
-// --- Init ---
-facades.push(newFacade());
-resFacades.push(null);
-renderFacades();
-updateDashboard();
-
-// ---- Export PDF ----
-document.getElementById('btnExportPDF').addEventListener('click', exporterPDF);
-document.getElementById('btnExportCSV').addEventListener('click', exporterCSV);
-
-// PWA
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(function(){});
-}
-
-// ============================================================
-//  PROJET — UI
-// ============================================================
-
-// --- Charger les infos projet dans le formulaire ---
-function chargerInfosProjet() {
-  document.getElementById('projetNom').value = projet.nom || '';
-  document.getElementById('projetClient').value = projet.client || '';
-  document.getElementById('projetChantier').value = projet.chantier || '';
-  document.getElementById('projetNumero').value = projet.numero || '';
-  document.getElementById('projetNotes').value = projet.notes || '';
-}
-
-// --- Sauvegarder les infos projet ---
-document.getElementById('btnProjetSauv').addEventListener('click', function() {
-  projet.nom = document.getElementById('projetNom').value;
-  projet.client = document.getElementById('projetClient').value;
-  projet.chantier = document.getElementById('projetChantier').value;
-  projet.numero = document.getElementById('projetNumero').value;
-  projet.notes = document.getElementById('projetNotes').value;
+// --- Planning ---
+function afficherPlanning() {
+  var el = document.getElementById('planningContent');
+  if (!el) return;
   
-  localStorage.setItem('calepinage_projet', JSON.stringify(projet));
-  showToast('✅ Infos projet enregistrées');
+  var dates = {
+    metre: document.getElementById('planMetreDate')?.value,
+    prep: document.getElementById('planPrepDate')?.value,
+    pose: document.getElementById('planPoseDate')?.value,
+    reception: document.getElementById('planReceptionDate')?.value
+  };
   
-  // Met à jour le dashboard
-  var logo = document.querySelector('.dashboard-logo');
-  if (logo) {
-    var nomProj = projet.nom ? ' — ' + projet.nom : '';
-    logo.textContent = '🏗️ Calepinage Pro' + nomProj;
-  }
-});
-
-// --- Sauvegarder une version ---
-document.getElementById('btnSauvVersion').addEventListener('click', function() {
-  var nom = prompt('Nom de la version (ex: v1, version client, etc.) :', 'v' + new Date().toISOString().slice(0,10));
-  if (nom !== null) {
-    sauvegarderVersion(nom || undefined);
-    mettreAJourListeVersions();
-  }
-});
-
-// --- Charger une version ---
-document.getElementById('btnChargerVersion').addEventListener('click', function() {
-  var sel = document.getElementById('selectVersions');
-  if (sel.value) {
-    chargerVersion(sel.value);
-    chargerInfosProjet();
-    mettreAJourListeVersions();
-  } else {
-    showToast('⚠️ Sélectionnez une version');
-  }
-});
-
-// --- Supprimer une version ---
-document.getElementById('btnSupprVersion').addEventListener('click', function() {
-  var sel = document.getElementById('selectVersions');
-  if (sel.value && confirm('Supprimer définitivement cette version ?')) {
-    supprimerVersion(sel.value);
-    mettreAJourListeVersions();
-  }
-});
-
-// --- Mettre à jour la liste des versions ---
-function mettreAJourListeVersions() {
-  var sel = document.getElementById('selectVersions');
-  var current = sel.value;
-  sel.innerHTML = '';
+  var hasDates = Object.values(dates).some(function(d) { return d; });
   
-  var list = listerVersions();
-  if (list.length === 0) {
-    sel.innerHTML = '<option value="">— Aucune version —</option>';
+  if (!hasDates) {
+    el.innerHTML = '<p class="empty">Aucun planning défini. Renseignez les dates dans l\\'onglet Saisie.</p>';
     return;
   }
   
-  list.forEach(function(item) {
-    var opt = document.createElement('option');
-    opt.value = item.key;
-    opt.textContent = item.version + ' (' + item.date + ')';
-    if (item.key === current) opt.selected = true;
-    sel.appendChild(opt);
+  var html = '<div class="planning-timeline">';
+  var etapes = [
+    { key: 'metre', label: '🔍 Métré', date: dates.metre },
+n    { key: 'prep', label: '🔧 Préparation', date: dates.prep },
+    { key: 'pose', label: '🏗️ Pose', date: dates.pose },
+    { key: 'reception', label: '✅ Réception', date: dates.reception }
+  ];
+  
+  etapes.forEach(function(e) {
+    if (e.date) {
+      var dateObj = new Date(e.date);
+      var isPast = dateObj < new Date();
+      var isToday = dateObj.toDateString() === new Date().toDateString();
+      html += '<div class="planning-item ' + (isPast ? 'past' : '') + ' ' + (isToday ? 'today' : '') + '">';
+      html += '<div class="planning-dot"></div>';
+      html += '<div class="planning-info">';
+      html += '<div class="planning-label">' + e.label + '</div>';
+      html += '<div class="planning-date">' + dateObj.toLocaleDateString('fr-FR') + '</div>';
+      html += '</div></div>';
+    }
   });
+  
+  html += '</div>';
+  el.innerHTML = html;
 }
 
-// --- Dashboard avec nom projet ---
-function mettreAJourDashboardProjet() {
-  var logo = document.querySelector('.dashboard-logo');
-  if (logo) {
-    var nomProj = projet.nom ? ' — ' + projet.nom : '';
-    logo.textContent = '🏗️ Calepinage Pro' + nomProj;
+// --- Boutons globaux ---
+function initGlobalButtons() {
+  var btnAdd = document.getElementById('btnAddFacade');
+  if (btnAdd) {
+    btnAdd.addEventListener('click', function() {
+      facades.push(newFacade());
+      resFacades.push(null);
+      renderFacades();
+      var last = facades.length - 1;
+      var body = document.getElementById('fb_' + last);
+      if (body) body.classList.add('open');
+    });
   }
+
+  var btnCalcAll = document.getElementById('btnCalcAll');
+  if (btnCalcAll) {
+    btnCalcAll.addEventListener('click', function() {
+      if (facades.length === 0) { showToast('⚠️ Ajoutez d\\'abord des façades'); return; }
+      
+      var hasErrors = false;
+      facades.forEach(function(f, i) {
+        var v = validerFacade(f);
+        if (!v.valid) {
+          showToast('❌ ' + f.nom + ' : ' + v.errors[0]);
+n          hasErrors = true;
+        }
+      });
+      
+      if (hasErrors) return;
+      
+      facades.forEach(function(f, i) { resFacades[i] = calculerFacade(f); });
+      currentVisu = 0;
+      renderFacades();
+      afficherMetreTotal();
+      updateSelectVisu();
+      _switchTab('metre');
+      showToast('✓ ' + facades.length + ' façade(s) calculée(s)');
+    });
+  }
+
+  var btnSauv = document.getElementById('btnSauv');
+  if (btnSauv) btnSauv.addEventListener('click', sauvegarderProjet);
+  
+  var btnCharg = document.getElementById('btnCharg');
+  if (btnCharg) btnCharg.addEventListener('click', function() {
+    document.getElementById('fileCharg').click();
+  });
+  
+  var fileCharg = document.getElementById('fileCharg');
+  if (fileCharg) {
+    fileCharg.addEventListener('change', function(e) {
+      chargerProjet(e.target.files[0]);
+      this.value = '';
+    });
+  }
+  
+  var btnImg = document.getElementById('btnImg');
+  if (btnImg) btnImg.addEventListener('click', partagerImage);
+  
+  var btnPartagerMetre = document.getElementById('btnPartagerMetre');
+  if (btnPartagerMetre) btnPartagerMetre.addEventListener('click', partagerMetres);
+  
+  var btnRedraw = document.getElementById('btnRedraw');
+  if (btnRedraw) {
+    btnRedraw.addEventListener('click', function() {
+      if (resFacades[currentVisu]) dessiner(resFacades[currentVisu]);
+    });
+  }
+  
+  // Export Excel
+  var btnExportExcel = document.getElementById('btnExportExcel');
+  if (btnExportExcel) btnExportExcel.addEventListener('click', exporterExcel);
+  
+  var btnExportExcelMetre = document.getElementById('btnExportExcelMetre');
+  if (btnExportExcelMetre) btnExportExcelMetre.addEventListener('click', exporterExcel);
 }
 
-// --- INIT PROJET ---
-// Charger les infos projet depuis localStorage
-var projetSauv = localStorage.getItem('calepinage_projet');
-if (projetSauv) {
-  try {
-    var p = JSON.parse(projetSauv);
-    projet.nom = p.nom || projet.nom;
-    projet.client = p.client || projet.client;
-    projet.chantier = p.chantier || projet.chantier;
-    projet.numero = p.numero || projet.numero;
-    projet.notes = p.notes || projet.notes;
-  } catch(e) {}
+// --- Export PDF / CSV ---
+function initExports() {
+  var btnPDF = document.getElementById('btnExportPDF');
+  if (btnPDF) btnPDF.addEventListener('click', exporterPDF);
+  
+  var btnCSV = document.getElementById('btnExportCSV');
+  if (btnCSV) btnCSV.addEventListener('click', exporterCSV);
 }
 
-// Initialiser le dashboard
-mettreAJourDashboardProjet();
+// ============================================================
+//  INIT GLOBAL — DOMContentLoaded
+// ============================================================
 
-// Charger les infos dans le formulaire (si le DOM est prêt)
 document.addEventListener('DOMContentLoaded', function() {
-  chargerInfosProjet();
-  mettreAJourListeVersions();
+  initTabs();
+  initSelectVisu();
+  initRenderStyle();
+  initGlobalButtons();
+  initExports();
+  
+  // Façade initiale
+  if (facades.length === 0) {
+    facades.push(newFacade());
+    resFacades.push(null);
+  }
+  renderFacades();
+  updateDashboard();
+  mettreAJourDashboardProjet();
+  
+  // Charger dernière session si disponible
+  var last = localStorage.getItem('calepinage_derniere_session');
+  if (last) {
+    try {
+      var data = JSON.parse(last);
+      if (data.facades && data.facades.length > 0) {
+        // Optionnel : proposer de restaurer
+      }
+    } catch(e) {}
+  }
 });
-
-// ---- Dans l'init existant, après le chargement de la dernière session ----
-// chargerDernierProjet(); // si tu veux charger automatiquement
