@@ -1,5 +1,5 @@
 // ============================================================
-//  PROJET — métadonnées, versions, logo
+//  PROJET — métadonnées, versions, gestion locale
 // ============================================================
 
 var projet = {
@@ -22,9 +22,9 @@ var currentVersionKey = null;
 
 function sauvegarderVersion(nomVersion) {
   var version = {
-    projet:    projet,
-    facades:   facades,
-    resultats: resFacades,
+    projet:    deepClone(projet),
+    facades:   deepClone(facades),
+    resultats: deepClone(resFacades),
     version:   nomVersion || 'v' + new Date().toISOString().slice(0,10),
     savedAt:   new Date().toISOString()
   };
@@ -78,7 +78,7 @@ function chargerDernierProjet() {
 }
 
 // ============================================================
-//  INFOS PROJET (formulaire)
+//  INFOS PROJET
 // ============================================================
 
 function chargerInfosProjet() {
@@ -88,7 +88,7 @@ function chargerInfosProjet() {
   if (el('projetChantier')) el('projetChantier').value = projet.chantier  || '';
   if (el('projetNumero'))   el('projetNumero').value   = projet.numero    || '';
   if (el('projetNotes'))    el('projetNotes').value    = projet.notes     || '';
-  // Dashboard titre
+  
   var dash = document.getElementById('dashboardProjet');
   if (dash) dash.textContent = projet.nom ? '— ' + projet.nom : '';
 }
@@ -100,11 +100,17 @@ function enregistrerInfosProjet() {
   projet.chantier = el('projetChantier') ? el('projetChantier').value : projet.chantier;
   projet.numero   = el('projetNumero')   ? el('projetNumero').value   : projet.numero;
   projet.notes    = el('projetNotes')    ? el('projetNotes').value    : projet.notes;
-  // Sauvegarder en localStorage
+  
   localStorage.setItem('calepinage_projet', JSON.stringify(projet));
-  // Mettre à jour le dashboard
+  
   var dash = document.getElementById('dashboardProjet');
   if (dash) dash.textContent = projet.nom ? '— ' + projet.nom : '';
+  
+  var logo = document.querySelector('.dashboard-logo');
+  if (logo) {
+    logo.textContent = '🏗️ Calepinage Pro' + (projet.nom ? ' — ' + projet.nom : '');
+  }
+  
   showToast('✅ Infos projet enregistrées');
 }
 
@@ -114,67 +120,6 @@ function restaurerInfosProjet() {
     try { projet = JSON.parse(saved); } catch(e) {}
     chargerInfosProjet();
   }
-}
-
-// ============================================================
-//  FIREBASE — Sauvegarde cloud
-// ============================================================
-
-async function sauvegarderChantierCloud() {
-  // Enregistrer les infos projet d'abord
-  enregistrerInfosProjet();
-
-  // Générer numéro si vide
-  if (!projet.numero) {
-    projet.numero = genererNumeroDossier();
-    var el = document.getElementById('projetNumero');
-    if (el) el.value = projet.numero;
-  }
-
-  await apiSauvegarderChantier();
-}
-
-async function afficherChantiersList() {
-  var liste = await apiListerChantiers();
-  var el    = document.getElementById('listeChantiers');
-  if (!el) return;
-
-  if (liste.length === 0) {
-    el.innerHTML = '<p class="empty">Aucun chantier dans Firebase.</p>';
-    return;
-  }
-
-  var etatLabel = {
-    'en_cours': '🔵 En cours',
-    'termine':  '✅ Terminé',
-    'en_pause': '⏸️ En pause',
-    'planifie': '📅 Planifié'
-  };
-
-  el.innerHTML = liste.map(function(c) {
-    var pct = c.avancement || 0;
-    return (
-      '<div class="chantier-card">' +
-        '<div class="chantier-header">' +
-          '<div>' +
-            '<div class="chantier-nom">' + (c.nomProjet || 'Sans nom') + '</div>' +
-            '<div class="chantier-meta">' + c.id + ' · ' + (c.client || '') + '</div>' +
-          '</div>' +
-          '<span class="badge ' + (c.etatAvancement === 'termine' ? 'ok' : '') + '">' +
-            (etatLabel[c.etatAvancement] || '🔵 En cours') +
-          '</span>' +
-        '</div>' +
-        '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
-        '<div class="chantier-footer">' +
-          '<span>📍 ' + (c.adresse || '—') + '</span>' +
-          '<div style="display:flex;gap:6px;">' +
-            '<button class="btn btn-primary btn-sm" onclick="apiChargerChantier(\'' + c.id + '\')">📂 Ouvrir</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="apiSupprimerChantier(\'' + c.id + '\')">🗑️</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>'
-    );
-  }).join('');
 }
 
 // ============================================================
@@ -195,7 +140,6 @@ function mettreAJourListeVersions() {
 //  INIT
 // ============================================================
 
-// Bouton enregistrer infos projet
 document.addEventListener('DOMContentLoaded', function() {
   restaurerInfosProjet();
   mettreAJourListeVersions();
@@ -205,7 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var btnSauvVersion = document.getElementById('btnSauvVersion');
   if (btnSauvVersion) btnSauvVersion.addEventListener('click', function() {
-    sauvegarderVersion();
+    var nom = prompt('Nom de la version :', 'v' + new Date().toISOString().slice(0,10));
+    if (nom !== null) sauvegarderVersion(nom || undefined);
   });
 
   var btnCharger = document.getElementById('btnChargerVersion');
@@ -218,15 +163,18 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnSuppr = document.getElementById('btnSupprVersion');
   if (btnSuppr) btnSuppr.addEventListener('click', function() {
     var sel = document.getElementById('selectVersions');
-    if (sel && sel.value) { supprimerVersion(sel.value); sel.value = ''; }
+    if (sel && sel.value) { 
+      if (confirm('Supprimer cette version ?')) {
+        supprimerVersion(sel.value); 
+        sel.value = ''; 
+      }
+    }
     else showToast('⚠️ Sélectionne une version');
   });
 
-  // Bouton sauvegarde cloud Firebase
   var btnCloud = document.getElementById('btnSauvCloud');
-  if (btnCloud) btnCloud.addEventListener('click', sauvegarderChantierCloud);
+  if (btnCloud) btnCloud.addEventListener('click', apiSauvegarderChantier);
 
-  // Bouton liste chantiers Firebase
   var btnListe = document.getElementById('btnListeChantiers');
   if (btnListe) btnListe.addEventListener('click', afficherChantiersList);
 });
