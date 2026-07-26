@@ -195,6 +195,7 @@ function render(){
 }
 
 render();
+drawFacades();
 
 // =========================
 // Sélection outil
