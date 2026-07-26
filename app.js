@@ -214,3 +214,66 @@ document.querySelectorAll("[data-tool]").forEach(btn=>{
 });
 
 console.log("CALEPINAGE PRO V0.1 lancé");
+
+function drawFacades() {
+
+    ctx.save();
+
+    ctx.translate(camera.x, camera.y);
+    ctx.scale(camera.zoom, camera.zoom);
+
+    facades.forEach(facade => {
+
+        ctx.fillStyle = facade.color;
+        ctx.strokeStyle = "#1d1d1d";
+        ctx.lineWidth = 2 / camera.zoom;
+
+        ctx.fillRect(
+            facade.x,
+            facade.y,
+            facade.width,
+            facade.height
+        );
+
+        ctx.strokeRect(
+            facade.x,
+            facade.y,
+            facade.width,
+            facade.height
+        );
+
+        if (facade.selected) {
+
+            ctx.strokeStyle = "#00b7ff";
+            ctx.lineWidth = 3 / camera.zoom;
+
+            ctx.strokeRect(
+                facade.x,
+                facade.y,
+                facade.width,
+                facade.height
+            );
+
+        }
+
+    });
+
+    if (drawing) {
+
+        ctx.strokeStyle = "#00b7ff";
+        ctx.setLineDash([10, 5]);
+
+        ctx.strokeRect(
+            startX,
+            startY,
+            mouse.worldX - startX,
+            mouse.worldY - startY
+        );
+
+        ctx.setLineDash([]);
+
+    }
+
+    ctx.restore();
+
+}
