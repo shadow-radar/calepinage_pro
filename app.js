@@ -178,43 +178,6 @@ function drawAxis(){
 
 }
 
-// =========================
-// Rendu
-// =========================
-
-function render(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    drawGrid();
-
-    drawAxis();
-
-    requestAnimationFrame(render);
-
-}
-
-render();
-drawFacades();
-
-// =========================
-// Sélection outil
-// =========================
-
-document.querySelectorAll("[data-tool]").forEach(btn=>{
-
-    btn.addEventListener("click",()=>{
-
-        currentTool=btn.dataset.tool;
-
-        console.log("Outil :",currentTool);
-
-    });
-
-});
-
-console.log("CALEPINAGE PRO V0.1 lancé");
-
 function drawFacades() {
 
     ctx.save();
@@ -277,3 +240,41 @@ function drawFacades() {
     ctx.restore();
 
 }
+
+// =========================
+// Rendu
+// =========================
+
+function render(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawGrid();
+
+    drawAxis();
+
+    requestAnimationFrame(render);
+
+}
+
+render();
+drawFacades();
+
+// =========================
+// Sélection outil
+// =========================
+
+document.querySelectorAll("[data-tool]").forEach(btn=>{
+
+    btn.addEventListener("click",()=>{
+
+        currentTool=btn.dataset.tool;
+
+        console.log("Outil :",currentTool);
+
+    });
+
+});
+
+console.log("CALEPINAGE PRO V0.1 lancé");
+
